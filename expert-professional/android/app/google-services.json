@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "433548051767",
+    "project_id": "friendapp-bba60",
+    "storage_bucket": "friendapp-bba60.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433548051767:android:74c65d58b39f30077386b2",
+        "android_client_info": {
+          "package_name": "com.connectax.expert_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBibhaFHLLajqQLCY9UIK7keLu3Cs0Kl3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433548051767:android:1b1962e2259a04e87386b2",
+        "android_client_info": {
+          "package_name": "com.connectax.expert_customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBibhaFHLLajqQLCY9UIK7keLu3Cs0Kl3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433548051767:android:3a7f838cf3161cf27386b2",
+        "android_client_info": {
+          "package_name": "com.connectax.expert_professional"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBibhaFHLLajqQLCY9UIK7keLu3Cs0Kl3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

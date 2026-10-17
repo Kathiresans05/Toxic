@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: expert_postgres
+    environment:
+      POSTGRES_DB: expert_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d expert_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis In-Memory Cache & Pub/Sub
+  redis:
+    image: redis:7-alpine
+    container_name: expert_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 3. Java Spring Boot 3 Backend
+  backend:
+    build:
+      context: ./expert-backend
+      dockerfile: Dockerfile
+    container_name: expert_backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://postgres:5432/expert_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgrespassword
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: dGhpc0lzQVZlcnlTZWN1cmVKd3RTZWNyZXRLZXlXaGljaElzQXRMZWFzdDI1NkJpdHNMb25nMTIzNDU2Nzg5MA==
+      AGORA_APP_ID: ${AGORA_APP_ID:-dummy_agora_app_id}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE:-dummy_agora_certificate}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_placeholder}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-rzp_secret_placeholder}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 4. React.js + TypeScript + Tailwind Admin Dashboard
+  admin-dashboard:
+    build:
+      context: ./expert-admin
+      dockerfile: Dockerfile
+    container_name: expert_admin
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  # 5. Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: expert_prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+  # 6. Grafana Dashboards
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: expert_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  redis_data:

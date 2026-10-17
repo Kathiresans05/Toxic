@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expert-admin
+  namespace: expert-platform
+  labels:
+    app: expert-admin
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: expert-admin
+  template:
+    metadata:
+      labels:
+        app: expert-admin
+    spec:
+      containers:
+        - name: admin
+          image: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/expert-admin:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: expert-admin-svc
+  namespace: expert-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+  selector:
+    app: expert-admin

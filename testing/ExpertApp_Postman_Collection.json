@@ -1,0 +1,134 @@
+{
+  "info": {
+    "name": "Expert Consultation Platform - Spring Boot API v1",
+    "description": "Production REST API collection for Auth, Agora Calls, Razorpay Payments, and Admin Operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@test.com\",\n  \"phoneNumber\": \"+919876543210\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Karthik Raja\",\n  \"role\": \"ROLE_CUSTOMER\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@test.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agora Consultation Calls",
+      "item": [
+        {
+          "name": "Initiate Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expertId\": \"{{expertId}}\",\n  \"callType\": \"VIDEO\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/calls/initiate", "host": ["{{baseUrl}}"], "path": ["api", "v1", "calls", "initiate"] }
+          }
+        },
+        {
+          "name": "Accept Call (Creator)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/calls/{{callId}}/accept", "host": ["{{baseUrl}}"], "path": ["api", "v1", "calls", "{{callId}}", "accept"] }
+          }
+        },
+        {
+          "name": "End Call & Calculate Billing",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/calls/{{callId}}/end", "host": ["{{baseUrl}}"], "path": ["api", "v1", "calls", "{{callId}}", "end"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments & Wallet",
+      "item": [
+        {
+          "name": "Create Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500.00,\n  \"currency\": \"INR\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments/create-order", "host": ["{{baseUrl}}"], "path": ["api", "v1", "payments", "create-order"] }
+          }
+        },
+        {
+          "name": "Verify Payment Signature",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order_sample123\",\n  \"paymentId\": \"pay_sample456\",\n  \"signature\": \"sample_sig\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/payments/verify", "host": ["{{baseUrl}}"], "path": ["api", "v1", "payments", "verify"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Operations",
+      "item": [
+        {
+          "name": "Get Dashboard KPIs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminJwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/stats", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "stats"] }
+          }
+        },
+        {
+          "name": "Get Pending KYC Queue",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminJwtToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/kyc/pending?page=0&size=20", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "kyc", "pending"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "jwtToken", "value": "" },
+    { "key": "adminJwtToken", "value": "" },
+    { "key": "callId", "value": "" },
+    { "key": "expertId", "value": "" }
+  ]
+}

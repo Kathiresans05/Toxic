@@ -1,0 +1,42 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.idea/
+.vscode/
+*.iml
+
+# Node / React
+node_modules/
+dist/
+.npm
+npm-debug.log*
+
+# Java / Maven / Spring Boot
+target/
+*.class
+*.jar
+*.war
+.m2/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+.gradle/
+local.properties
+**/android/.gradle/
+**/android/app/build/
+**/android/build/
+**/android/captures/
+**/android/.cxx/
+*.apk
+*.aab
+
+# Logs
+*.log
