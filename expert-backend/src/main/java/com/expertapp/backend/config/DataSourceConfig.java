@@ -51,7 +51,7 @@ public class DataSourceConfig {
                             password = userInfo[1];
                         }
                     }
-                    cleanUrl = "jdbc:postgresql://" + host + ":" + port + "/" + path + "?sslmode=require";
+                    cleanUrl = "jdbc:postgresql://" + host + ":" + port + "/" + path + "?sslmode=prefer";
                     log.info("Converted cloud postgres URL to JDBC URL for host: {}:{}", host, port);
                 } catch (Exception e) {
                     log.warn("Could not parse postgres URI, prepending jdbc: {}", e.getMessage());
