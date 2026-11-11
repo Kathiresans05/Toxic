@@ -12,8 +12,8 @@ import {
   AuditLogItem,
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-const ACTUATOR_URL = 'http://localhost:8080/actuator';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://toxic-g6q7.onrender.com/api/v1';
+const ACTUATOR_URL = (import.meta as any).env?.VITE_ACTUATOR_URL || 'https://toxic-g6q7.onrender.com/actuator';
 
 class ApiService {
   private token: string | null = null;
