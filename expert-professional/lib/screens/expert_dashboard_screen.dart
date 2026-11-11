@@ -4,15 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:expert_professional/providers/auth_provider.dart';
 import 'package:expert_professional/services/api_service.dart';
 import 'package:expert_professional/services/socket_service.dart';
-import 'package:expert_professional/services/call_service.dart';
-import 'package:expert_professional/screens/incoming_call_screen.dart';
-import 'package:expert_professional/screens/call_screen.dart';
 import 'package:expert_professional/screens/expert_onboarding_screens.dart';
 import 'package:expert_professional/screens/voice_bio_screen.dart';
 import 'package:expert_professional/screens/bank_payout_screen.dart';
 import 'package:expert_professional/services/notification_service.dart';
-import 'package:expert_professional/screens/chat_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:expert_professional/services/foreground_service.dart';
 
 // Reuse visual constants matching the golden/dark luxury theme
 class ExpertColors {
@@ -36,9 +32,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
   bool _isOnline = false;
-  bool _isLoading = true;
   Map<String, dynamic>? _stats;
-  StreamSubscription<QuerySnapshot>? _incomingCallSubscription;
 
   @override
   void initState() {
@@ -52,7 +46,6 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     SocketService().onReceiveMessage = (data) {
       if (mounted) {
         final senderName = data['senderName'] ?? 'Customer';
-        final senderId = data['senderId'] ?? '';
         final text = data['text'] ?? '';
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,7 +54,11 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             duration: const Duration(seconds: 5),
             content: Row(
               children: [
-                const Icon(Icons.chat_bubble_outline, color: ExpertColors.primaryYellow, size: 20),
+                const Icon(
+                  Icons.chat_bubble_outline,
+                  color: ExpertColors.primaryYellow,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -70,31 +67,23 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                     children: [
                       Text(
                         'Message from $senderName',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         text,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                        style: const TextStyle(
+                          color: ExpertColors.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatScreen(
-                          customerName: senderName,
-                          customerId: senderId,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Reply', style: TextStyle(color: ExpertColors.primaryYellow, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -106,33 +95,43 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
 
   void _setupIncomingCallListener() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final expertId = authProvider.user?['id'];
-    
-    if (expertId != null) {
-      _incomingCallSubscription = CallService().listenToIncomingCalls(expertId).listen((snapshot) {
+    final expertId = authProvider.user?['id']?.toString();
+
+    if (expertId != null && expertId.isNotEmpty) {
+      SocketService().connect(expertId);
+      SocketService().onIncomingCall = (data) {
         if (!mounted) return;
-        for (var change in snapshot.docChanges) {
-          if (change.type == DocumentChangeType.added) {
-            final data = change.doc.data() as Map<String, dynamic>;
-            final callId = change.doc.id;
-            
-            CallNotificationService().showIncomingCallBanner(
-              context: context,
-              callId: callId,
-              callerName: data['customerName'] ?? 'Customer',
-              channelName: data['channelName'] ?? 'room_123',
-              pricePerMinute: double.tryParse(data['pricePerMinute']?.toString() ?? '') ?? 3.0,
-              callType: data['callType'] ?? 'video',
-            );
-          }
-        }
-      });
+        final callId = data['callId']?.toString() ?? '';
+        final callerName = data['callerName']?.toString() ?? 'Customer';
+        final channelName = data['channelName']?.toString() ?? 'room_$callId';
+        final pricePerMinute =
+            double.tryParse(data['pricePerMinute']?.toString() ?? '') ?? 3.0;
+        final callType = data['callType']?.toString().toLowerCase() ?? 'video';
+
+        // Trigger Android native wake-lock, full-screen intent & heads-up notification
+        ForegroundService().triggerIncomingCall(
+          callerName: callerName,
+          callId: callId,
+          channelName: channelName,
+          price: pricePerMinute,
+          callType: callType,
+        );
+
+        // Show in-app banner with incoming call controls
+        CallNotificationService().showIncomingCallBanner(
+          context: context,
+          callId: callId,
+          callerName: callerName,
+          channelName: channelName,
+          pricePerMinute: pricePerMinute,
+          callType: callType,
+        );
+      };
     }
   }
 
   @override
   void dispose() {
-    _incomingCallSubscription?.cancel();
     super.dispose();
   }
 
@@ -141,11 +140,19 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     await authProvider.refreshProfile();
     final stats = await ApiService().getExpertStats();
     if (mounted) {
+      final online = authProvider.user?['isOnline'] == true;
       setState(() {
         _stats = stats;
-        _isOnline = authProvider.user?['isOnline'] == true;
-        _isLoading = false;
+        _isOnline = online;
       });
+
+      if (online) {
+        ForegroundService().startOnlineService();
+        final expertId = authProvider.user?['id']?.toString();
+        if (expertId != null && expertId.isNotEmpty) {
+          SocketService().connect(expertId);
+        }
+      }
     }
   }
 
@@ -154,11 +161,20 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
       _isOnline = value;
     });
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.token != null) {
-      try {
-        await FirebaseFirestore.instance.collection('experts').doc(authProvider.token).update({'isOnline': value});
-      } catch (_) {}
+    final expertId = authProvider.user?['id']?.toString();
+
+    if (value) {
+      await ForegroundService().startOnlineService();
+      if (expertId != null && expertId.isNotEmpty) {
+        SocketService().connect(expertId);
+      }
+    } else {
+      await ForegroundService().stopOnlineService();
     }
+
+    try {
+      await ApiService().toggleExpertStatus(value);
+    } catch (_) {}
     if (mounted) {
       authProvider.refreshProfile();
     }
@@ -182,9 +198,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
         ),
       ),
       bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          canvasColor: ExpertColors.background,
-        ),
+        data: Theme.of(context).copyWith(canvasColor: ExpertColors.background),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
@@ -198,7 +212,10 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
           unselectedItemColor: ExpertColors.textMuted,
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 12),
           items: const [
             BottomNavigationBarItem(
@@ -213,10 +230,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
               icon: Icon(Icons.account_balance_wallet),
               label: 'Earnings',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
         ),
       ),
@@ -232,28 +246,52 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     String name = 'Expert';
     if (user['name'] != null && user['name'].toString().trim().isNotEmpty) {
       name = user['name'].toString().trim();
-    } else if (user['email'] != null && user['email'].toString().trim().isNotEmpty) {
+    } else if (user['fullName'] != null &&
+        user['fullName'].toString().trim().isNotEmpty) {
+      name = user['fullName'].toString().trim();
+    } else if (user['user'] is Map &&
+        user['user']['fullName'] != null &&
+        user['user']['fullName'].toString().trim().isNotEmpty) {
+      name = user['user']['fullName'].toString().trim();
+    } else if (user['email'] != null &&
+        user['email'].toString().trim().isNotEmpty) {
       name = user['email'].toString().split('@')[0];
-    } else if (user['phone'] != null && user['phone'].toString().trim().isNotEmpty) {
+    } else if (user['phone'] != null &&
+        user['phone'].toString().trim().isNotEmpty) {
       name = user['phone'].toString().trim();
-    } else if (user['mobileNumber'] != null && user['mobileNumber'].toString().trim().isNotEmpty) {
+    } else if (user['mobileNumber'] != null &&
+        user['mobileNumber'].toString().trim().isNotEmpty) {
       name = user['mobileNumber'].toString().trim();
     }
 
     String role = 'Friendly Listener & Companion';
     if (user['bio'] != null && user['bio'].toString().trim().isNotEmpty) {
       role = user['bio'].toString().trim();
-    } else if (user['categories'] != null && (user['categories'] as List).isNotEmpty) {
+    } else if (user['categories'] != null &&
+        (user['categories'] as List).isNotEmpty) {
       role = (user['categories'] as List).join(', ');
     }
     final String photoUrl = user['profilePhotoUrl'] ?? '';
     final String firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'E';
 
-    final String todayEarnings = user['todayEarnings']?.toString() ?? _stats?['todayEarnings'] ?? '₹ 0.00';
-    final String totalCalls = user['totalCalls']?.toString() ?? _stats?['totalCalls']?.toString() ?? '0';
-    final String duration = user['duration']?.toString() ?? _stats?['duration']?.toString() ?? '00:00:00';
-    final String rating = user['rating']?.toString() ?? _stats?['rating']?.toString() ?? '5.0';
-    final String missedCalls = user['missedCalls']?.toString() ?? _stats?['missedCalls']?.toString() ?? '0';
+    final String todayEarnings =
+        user['todayEarnings']?.toString() ??
+        _stats?['todayEarnings'] ??
+        '₹ 0.00';
+    final String totalCalls =
+        user['totalCalls']?.toString() ??
+        _stats?['totalCalls']?.toString() ??
+        '0';
+    final String duration =
+        user['duration']?.toString() ??
+        _stats?['duration']?.toString() ??
+        '00:00:00';
+    final String rating =
+        user['rating']?.toString() ?? _stats?['rating']?.toString() ?? '5.0';
+    final String missedCalls =
+        user['missedCalls']?.toString() ??
+        _stats?['missedCalls']?.toString() ??
+        '0';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -266,7 +304,11 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.menu, color: ExpertColors.primaryYellow, size: 28),
+                icon: const Icon(
+                  Icons.menu,
+                  color: ExpertColors.primaryYellow,
+                  size: 28,
+                ),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
               const Text(
@@ -280,7 +322,11 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
               Stack(
                 alignment: Alignment.topRight,
                 children: [
-                  const Icon(Icons.notifications_none_rounded, color: ExpertColors.primaryYellow, size: 28),
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: ExpertColors.primaryYellow,
+                    size: 28,
+                  ),
                   Positioned(
                     right: 4,
                     top: 4,
@@ -292,9 +338,9 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                         shape: BoxShape.circle,
                       ),
                     ),
-                  )
+                  ),
                 ],
-              )
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -307,12 +353,15 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: ExpertColors.primaryYellow, width: 2),
+                  border: Border.all(
+                    color: ExpertColors.primaryYellow,
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: ExpertColors.primaryYellow.withOpacity(0.3),
+                      color: ExpertColors.primaryYellow.withValues(alpha: 0.3),
                       blurRadius: 10,
-                    )
+                    ),
                   ],
                 ),
                 child: CircleAvatar(
@@ -325,7 +374,8 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                             width: 72,
                             height: 72,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(firstLetter),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildFallbackAvatar(firstLetter),
                           )
                         : _buildFallbackAvatar(firstLetter),
                   ),
@@ -357,8 +407,12 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                             color: ExpertColors.primaryYellow,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check, color: Colors.black, size: 12),
-                        )
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.black,
+                            size: 12,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -377,12 +431,19 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: _isOnline ? Colors.amber.shade900.withOpacity(0.2) : Colors.white10,
+                      color: _isOnline
+                          ? Colors.amber.shade900.withValues(alpha: 0.2)
+                          : Colors.white10,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _isOnline ? ExpertColors.primaryYellow.withOpacity(0.4) : Colors.white24,
+                        color: _isOnline
+                            ? ExpertColors.primaryYellow.withValues(alpha: 0.4)
+                            : Colors.white24,
                       ),
                     ),
                     child: Row(
@@ -391,7 +452,9 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: _isOnline ? Colors.greenAccent : Colors.redAccent,
+                            color: _isOnline
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -399,7 +462,9 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                         Text(
                           _isOnline ? 'Online' : 'Offline',
                           style: TextStyle(
-                            color: _isOnline ? ExpertColors.primaryYellow : Colors.white,
+                            color: _isOnline
+                                ? ExpertColors.primaryYellow
+                                : Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -411,7 +476,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                   Switch(
                     value: _isOnline,
                     activeTrackColor: ExpertColors.primaryYellow,
-                    activeColor: Colors.white,
+                    activeThumbColor: Colors.white,
                     inactiveThumbColor: Colors.grey,
                     inactiveTrackColor: Colors.white24,
                     onChanged: (val) => _toggleOnline(val),
@@ -419,15 +484,22 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                   if (user['isApproved'] != true) ...[
                     const SizedBox(height: 2),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.15),
+                        color: Colors.amber.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.amber, width: 0.8),
                       ),
                       child: const Text(
                         'Pending Approval ⏳',
-                        style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -450,10 +522,10 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: ExpertColors.primaryYellow.withOpacity(0.2),
+                  color: ExpertColors.primaryYellow.withValues(alpha: 0.2),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
-                )
+                ),
               ],
             ),
             child: Column(
@@ -471,9 +543,12 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
+                        color: Colors.black.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -501,17 +576,36 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                 SizedBox(
                   height: 60,
                   width: double.infinity,
-                  child: CustomPaint(
-                    painter: SparklinePainter(),
-                  ),
+                  child: CustomPaint(painter: SparklinePainter()),
                 ),
                 const SizedBox(height: 8),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('00:00', style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('12:00', style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('24:00', style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(
+                      '00:00',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '12:00',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '24:00',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -528,10 +622,34 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             mainAxisSpacing: 16,
             childAspectRatio: 1.45,
             children: [
-              _buildStatCard('Total Calls', totalCalls, 'Live', Colors.greenAccent, Icons.phone_in_talk_rounded),
-              _buildStatCard('Duration', duration, 'Total', Colors.greenAccent, Icons.av_timer_rounded),
-              _buildStatCard('Rating  ★', rating, 'Average', ExpertColors.primaryYellow, Icons.star_rounded),
-              _buildStatCard('Missed Calls', missedCalls, 'Live', Colors.redAccent, Icons.phone_missed_rounded),
+              _buildStatCard(
+                'Total Calls',
+                totalCalls,
+                'Live',
+                Colors.greenAccent,
+                Icons.phone_in_talk_rounded,
+              ),
+              _buildStatCard(
+                'Duration',
+                duration,
+                'Total',
+                Colors.greenAccent,
+                Icons.av_timer_rounded,
+              ),
+              _buildStatCard(
+                'Rating  ★',
+                rating,
+                'Average',
+                ExpertColors.primaryYellow,
+                Icons.star_rounded,
+              ),
+              _buildStatCard(
+                'Missed Calls',
+                missedCalls,
+                'Live',
+                Colors.redAccent,
+                Icons.phone_missed_rounded,
+              ),
             ],
           ),
           const SizedBox(height: 28),
@@ -542,13 +660,21 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             children: [
               const Text(
                 'Upcoming Slots',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               GestureDetector(
                 onTap: () {},
                 child: const Text(
                   'View All',
-                  style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: ExpertColors.primaryYellow,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -587,7 +713,13 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String val, String indicator, Color indicatorColor, IconData icon) {
+  Widget _buildStatCard(
+    String label,
+    String val,
+    String indicator,
+    Color indicatorColor,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -609,18 +741,33 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             children: [
               Text(
                 label,
-                style: const TextStyle(color: ExpertColors.textMuted, fontSize: 13),
+                style: const TextStyle(
+                  color: ExpertColors.textMuted,
+                  fontSize: 13,
+                ),
               ),
-              Icon(icon, color: ExpertColors.primaryYellow.withOpacity(0.8), size: 20),
+              Icon(
+                icon,
+                color: ExpertColors.primaryYellow.withValues(alpha: 0.8),
+                size: 20,
+              ),
             ],
           ),
           Text(
             val,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           Text(
             indicator,
-            style: TextStyle(color: indicatorColor, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: indicatorColor,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -642,24 +789,32 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             children: [
               Icon(
                 Icons.access_time_rounded,
-                color: isBooked ? ExpertColors.primaryYellow : ExpertColors.textMuted,
+                color: isBooked
+                    ? ExpertColors.primaryYellow
+                    : ExpertColors.textMuted,
                 size: 20,
               ),
               const SizedBox(width: 12),
               Text(
                 time,
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
           Text(
             status,
             style: TextStyle(
-              color: isBooked ? ExpertColors.primaryYellow : ExpertColors.textMuted,
+              color: isBooked
+                  ? ExpertColors.primaryYellow
+                  : ExpertColors.textMuted,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
-          )
+          ),
         ],
       ),
     );
@@ -676,7 +831,10 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text('Earnings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Earnings',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           bottom: const TabBar(
             indicatorColor: ExpertColors.primaryYellow,
             labelColor: ExpertColors.primaryYellow,
@@ -688,10 +846,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
           ),
         ),
         body: TabBarView(
-          children: [
-            EarningsLogsView(),
-            EarningsOverviewView(),
-          ],
+          children: [EarningsLogsView(), EarningsOverviewView()],
         ),
       ),
     );
@@ -703,21 +858,26 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     String name = 'Expert';
     if (user['name'] != null && user['name'].toString().trim().isNotEmpty) {
       name = user['name'].toString().trim();
-    } else if (user['email'] != null && user['email'].toString().trim().isNotEmpty) {
+    } else if (user['email'] != null &&
+        user['email'].toString().trim().isNotEmpty) {
       name = user['email'].toString().split('@')[0];
-    } else if (user['phone'] != null && user['phone'].toString().trim().isNotEmpty) {
+    } else if (user['phone'] != null &&
+        user['phone'].toString().trim().isNotEmpty) {
       name = user['phone'].toString().trim();
-    } else if (user['mobileNumber'] != null && user['mobileNumber'].toString().trim().isNotEmpty) {
+    } else if (user['mobileNumber'] != null &&
+        user['mobileNumber'].toString().trim().isNotEmpty) {
       name = user['mobileNumber'].toString().trim();
     }
 
     String role = 'Friendly Listener & Companion';
     if (user['bio'] != null && user['bio'].toString().trim().isNotEmpty) {
       role = user['bio'].toString().trim();
-    } else if (user['categories'] != null && (user['categories'] as List).isNotEmpty) {
+    } else if (user['categories'] != null &&
+        (user['categories'] as List).isNotEmpty) {
       role = (user['categories'] as List).join(', ');
     }
-    final String mobile = user['mobileNumber'] ?? user['phone'] ?? (user['email'] ?? 'N/A');
+    final String mobile =
+        user['mobileNumber'] ?? user['phone'] ?? (user['email'] ?? 'N/A');
     final String photoUrl = user['profilePhotoUrl'] ?? '';
     final String firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'E';
 
@@ -727,7 +887,12 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
         children: [
           // Header Profile Area
           Container(
-            padding: const EdgeInsets.only(top: 60, bottom: 24, left: 20, right: 20),
+            padding: const EdgeInsets.only(
+              top: 60,
+              bottom: 24,
+              left: 20,
+              right: 20,
+            ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF1F1F24), Color(0xFF141418)],
@@ -742,14 +907,31 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: ExpertColors.primaryYellow, width: 2),
+                    border: Border.all(
+                      color: ExpertColors.primaryYellow,
+                      width: 2,
+                    ),
                   ),
                   child: CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.white10,
                     child: photoUrl.isNotEmpty
-                        ? ClipOval(child: Image.network(photoUrl, width: 56, height: 56, fit: BoxFit.cover))
-                        : Text(firstLetter, style: const TextStyle(color: ExpertColors.primaryYellow, fontSize: 20, fontWeight: FontWeight.bold)),
+                        ? ClipOval(
+                            child: Image.network(
+                              photoUrl,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Text(
+                            firstLetter,
+                            style: const TextStyle(
+                              color: ExpertColors.primaryYellow,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -762,21 +944,43 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                           Flexible(
                             child: Text(
                               name,
-                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.verified, color: ExpertColors.primaryYellow, size: 16),
+                          const Icon(
+                            Icons.verified,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(role, style: const TextStyle(color: ExpertColors.textMuted, fontSize: 12), overflow: TextOverflow.ellipsis),
+                      Text(
+                        role,
+                        style: const TextStyle(
+                          color: ExpertColors.textMuted,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
-                      Text(mobile, style: const TextStyle(color: ExpertColors.primaryYellow, fontSize: 11, fontWeight: FontWeight.w600)),
+                      Text(
+                        mobile,
+                        style: const TextStyle(
+                          color: ExpertColors.primaryYellow,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -807,7 +1011,12 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                   title: 'Earnings & Payouts',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const BankPayoutScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BankPayoutScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildDrawerItem(
@@ -818,14 +1027,22 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                     setState(() => _currentIndex = 3);
                   },
                 ),
-                const Divider(color: Colors.white10, height: 24, indent: 20, endIndent: 20),
+                const Divider(
+                  color: Colors.white10,
+                  height: 24,
+                  indent: 20,
+                  endIndent: 20,
+                ),
                 _buildDrawerItem(
                   icon: Icons.mic_rounded,
                   title: 'Voice Bio (30s Intro)',
                   badgeText: 'New',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const VoiceBioScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const VoiceBioScreen()),
+                    );
                   },
                 ),
                 _buildDrawerItem(
@@ -835,7 +1052,11 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Your Expert Credentials are 100% Verified.')),
+                      const SnackBar(
+                        content: Text(
+                          'Your Expert Credentials are 100% Verified.',
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -865,21 +1086,33 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
             ),
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              title: const Text('Sign Out', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+              leading: const Icon(
+                Icons.logout_rounded,
+                color: Colors.redAccent,
+              ),
+              title: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
               onTap: () async {
                 Navigator.pop(context);
                 await authProvider.logout();
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const ExpertLoginScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ExpertLoginScreen(),
+                    ),
                     (route) => false,
                   );
                 }
               },
             ),
-          )
+          ),
         ],
       ),
     );
@@ -895,22 +1128,36 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
       leading: Icon(icon, color: ExpertColors.primaryYellow, size: 22),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       trailing: badgeText != null
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: ExpertColors.primaryYellow.withOpacity(0.2),
+                color: ExpertColors.primaryYellow.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: ExpertColors.primaryYellow.withOpacity(0.5)),
+                border: Border.all(
+                  color: ExpertColors.primaryYellow.withValues(alpha: 0.5),
+                ),
               ),
               child: Text(
                 badgeText,
-                style: const TextStyle(color: ExpertColors.primaryYellow, fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: ExpertColors.primaryYellow,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             )
-          : const Icon(Icons.chevron_right, color: ExpertColors.textMuted, size: 18),
+          : const Icon(
+              Icons.chevron_right,
+              color: ExpertColors.textMuted,
+              size: 18,
+            ),
       onTap: onTap,
     );
   }
@@ -966,7 +1213,11 @@ class _CallHistoryViewState extends State<CallHistoryView> {
           const Center(
             child: Text(
               'Call History',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -989,158 +1240,132 @@ class _CallHistoryViewState extends State<CallHistoryView> {
           ),
           const SizedBox(height: 20),
 
-          // Simulator Shortcuts header
-          const Text(
-            'Prototype Sandbox Controllers',
-            style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const IncomingCallScreen(
-                          callId: 'sim_call_id',
-                          callerName: 'John Doe',
-                          channelName: 'ring_channel',
-                        ),
-                      ),
-                    );
-                    _fetchCallHistory();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white10,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  child: const Text('Sim Ring', style: TextStyle(fontSize: 12)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CallScreen(
-                          expertName: 'John Doe',
-                          expertId: 'live_test',
-                          pricePerMinute: 5.0,
-                          channelName: 'sim_channel',
-                        ),
-                      ),
-                    );
-                    _fetchCallHistory();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white10,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  child: const Text('Sim Live Call', style: TextStyle(fontSize: 12)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
           // List log
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: ExpertColors.primaryYellow))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: ExpertColors.primaryYellow,
+                    ),
+                  )
                 : _filteredLogs().isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No call history yet',
-                          style: TextStyle(color: ExpertColors.textMuted, fontSize: 16),
-                        ),
-                      )
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: _filteredLogs().length,
-                        itemBuilder: (context, index) {
-                          final log = _filteredLogs()[index];
-                          final customer = log['customer'] ?? {};
-                          final String name = customer['name'] ?? customer['mobileNumber'] ?? 'Customer';
-                          final String avatar = customer['profilePhotoUrl'] ?? '';
-                          final String firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'C';
-                          final double earning = double.tryParse(log['expertEarning']?.toString() ?? '0') ?? 0.0;
-                          final int durationSecs = log['durationSeconds'] ?? 0;
-                          final String durationStr = '${(durationSecs ~/ 60).toString().padLeft(2, '0')}:${(durationSecs % 60).toString().padLeft(2, '0')} min';
-                          final String status = log['status']?.toString().toUpperCase() ?? 'COMPLETED';
+                ? const Center(
+                    child: Text(
+                      'No call history yet',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 16,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _filteredLogs().length,
+                    itemBuilder: (context, index) {
+                      final log = _filteredLogs()[index];
+                      final customer = log['customer'] ?? {};
+                      final String name =
+                          customer['name'] ??
+                          customer['mobileNumber'] ??
+                          'Customer';
+                      final String avatar = customer['profilePhotoUrl'] ?? '';
+                      final String firstLetter = name.isNotEmpty
+                          ? name[0].toUpperCase()
+                          : 'C';
+                      final double earning =
+                          double.tryParse(
+                            log['expertEarning']?.toString() ?? '0',
+                          ) ??
+                          0.0;
+                      final int durationSecs = log['durationSeconds'] ?? 0;
+                      final String durationStr =
+                          '${(durationSecs ~/ 60).toString().padLeft(2, '0')}:${(durationSecs % 60).toString().padLeft(2, '0')} min';
+                      final String status =
+                          log['status']?.toString().toUpperCase() ??
+                          'COMPLETED';
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: ExpertColors.cardBg,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: ExpertColors.borderColor),
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: ExpertColors.cardBg,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: ExpertColors.borderColor),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: ExpertColors.primaryYellow,
+                              backgroundImage: avatar.isNotEmpty
+                                  ? NetworkImage(avatar)
+                                  : null,
+                              child: avatar.isEmpty
+                                  ? Text(
+                                      firstLetter,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    )
+                                  : null,
                             ),
-                            child: Row(
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '$durationStr • $status',
+                                    style: const TextStyle(
+                                      color: ExpertColors.textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: ExpertColors.primaryYellow,
-                                  backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                                  child: avatar.isEmpty
-                                      ? Text(
-                                          firstLetter,
-                                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '$durationStr • $status',
-                                        style: const TextStyle(color: ExpertColors.textMuted, fontSize: 12),
-                                      ),
-                                    ],
+                                Text(
+                                  '₹${earning.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: ExpertColors.primaryYellow,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '₹${earning.toStringAsFixed(2)}',
-                                      style: const TextStyle(color: ExpertColors.primaryYellow, fontSize: 15, fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: const BoxDecoration(
-                                        color: ExpertColors.borderColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.phone_in_talk,
-                                        color: ExpertColors.primaryYellow,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: ExpertColors.borderColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.phone_in_talk,
+                                    color: ExpertColors.primaryYellow,
+                                    size: 16,
+                                  ),
                                 ),
                               ],
                             ),
-                          );
-                        },
-                      ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -1160,7 +1385,9 @@ class _CallHistoryViewState extends State<CallHistoryView> {
         decoration: BoxDecoration(
           color: isSelected ? ExpertColors.primaryYellow : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? ExpertColors.primaryYellow : Colors.white24),
+          border: Border.all(
+            color: isSelected ? ExpertColors.primaryYellow : Colors.white24,
+          ),
         ),
         child: Text(
           filterName,
@@ -1188,24 +1415,29 @@ class ProfileTabView extends StatelessWidget {
     String name = 'Expert';
     if (user['name'] != null && user['name'].toString().trim().isNotEmpty) {
       name = user['name'].toString().trim();
-    } else if (user['email'] != null && user['email'].toString().trim().isNotEmpty) {
+    } else if (user['email'] != null &&
+        user['email'].toString().trim().isNotEmpty) {
       name = user['email'].toString().split('@')[0];
-    } else if (user['phone'] != null && user['phone'].toString().trim().isNotEmpty) {
+    } else if (user['phone'] != null &&
+        user['phone'].toString().trim().isNotEmpty) {
       name = user['phone'].toString().trim();
-    } else if (user['mobileNumber'] != null && user['mobileNumber'].toString().trim().isNotEmpty) {
+    } else if (user['mobileNumber'] != null &&
+        user['mobileNumber'].toString().trim().isNotEmpty) {
       name = user['mobileNumber'].toString().trim();
     }
 
     String role = 'Friendly Listener & Companion';
     if (user['bio'] != null && user['bio'].toString().trim().isNotEmpty) {
       role = user['bio'].toString().trim();
-    } else if (user['categories'] != null && (user['categories'] as List).isNotEmpty) {
+    } else if (user['categories'] != null &&
+        (user['categories'] as List).isNotEmpty) {
       role = (user['categories'] as List).join(', ');
     }
     final String photoUrl = user['profilePhotoUrl'] ?? '';
     final String firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'E';
     final String experienceYears = user['experienceYears']?.toString() ?? '1+';
-    final String languages = user['languages'] != null && (user['languages'] as List).isNotEmpty
+    final String languages =
+        user['languages'] != null && (user['languages'] as List).isNotEmpty
         ? (user['languages'] as List).join(', ')
         : 'Tamil, English';
 
@@ -1219,7 +1451,11 @@ class ProfileTabView extends StatelessWidget {
           const Center(
             child: Text(
               'Profile',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -1234,23 +1470,34 @@ class ProfileTabView extends StatelessWidget {
                   height: 140,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: ExpertColors.primaryYellow, width: 3),
+                    border: Border.all(
+                      color: ExpertColors.primaryYellow,
+                      width: 3,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: ExpertColors.primaryYellow.withOpacity(0.2),
+                        color: ExpertColors.primaryYellow.withValues(
+                          alpha: 0.2,
+                        ),
                         blurRadius: 15,
-                      )
+                      ),
                     ],
                   ),
                 ),
                 CircleAvatar(
                   radius: 64,
                   backgroundColor: ExpertColors.primaryYellow,
-                  backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : null,
                   child: photoUrl.isEmpty
                       ? Text(
                           firstLetter,
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 44),
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 44,
+                          ),
                         )
                       : null,
                 ),
@@ -1264,7 +1511,11 @@ class ProfileTabView extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: ExpertColors.borderColor),
                     ),
-                    child: const Icon(Icons.edit, color: ExpertColors.primaryYellow, size: 18),
+                    child: const Icon(
+                      Icons.edit,
+                      color: ExpertColors.primaryYellow,
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
@@ -1282,7 +1533,11 @@ class ProfileTabView extends StatelessWidget {
                     Flexible(
                       child: Text(
                         name,
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1293,14 +1548,21 @@ class ProfileTabView extends StatelessWidget {
                         color: ExpertColors.primaryYellow,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, color: Colors.black, size: 12),
-                    )
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.black,
+                        size: 12,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
                   role,
-                  style: const TextStyle(color: ExpertColors.textMuted, fontSize: 15),
+                  style: const TextStyle(
+                    color: ExpertColors.textMuted,
+                    fontSize: 15,
+                  ),
                 ),
               ],
             ),
@@ -1317,7 +1579,9 @@ class ProfileTabView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Expanded(child: _buildMetricCol('$experienceYears Yrs', 'Experience')),
+                Expanded(
+                  child: _buildMetricCol('$experienceYears Yrs', 'Experience'),
+                ),
                 Container(height: 30, width: 1, color: Colors.white12),
                 Expanded(child: _buildMetricCol('5.0 ★', 'Rating')),
                 Container(height: 30, width: 1, color: Colors.white12),
@@ -1328,11 +1592,22 @@ class ProfileTabView extends StatelessWidget {
           const SizedBox(height: 28),
 
           // About Me
-          const Text('About Me', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'About Me',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             role.isNotEmpty ? role : 'Verified Expert Consultant.',
-            style: const TextStyle(color: ExpertColors.textMuted, fontSize: 14, height: 1.4),
+            style: const TextStyle(
+              color: ExpertColors.textMuted,
+              fontSize: 14,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -1348,9 +1623,17 @@ class ProfileTabView extends StatelessWidget {
               children: [
                 _buildInfoRow(Icons.translate, 'Languages', languages),
                 const Divider(color: Colors.white10, height: 24),
-                _buildInfoRow(Icons.psychology, 'Expertise', 'Relationship, Breakup, Marriage'),
+                _buildInfoRow(
+                  Icons.psychology,
+                  'Expertise',
+                  'Relationship, Breakup, Marriage',
+                ),
                 const Divider(color: Colors.white10, height: 24),
-                _buildInfoRow(Icons.record_voice_over, 'Consultation Style', 'Voice, Friendly, Practical'),
+                _buildInfoRow(
+                  Icons.record_voice_over,
+                  'Consultation Style',
+                  'Voice, Friendly, Practical',
+                ),
               ],
             ),
           ),
@@ -1361,20 +1644,31 @@ class ProfileTabView extends StatelessWidget {
             context,
             Icons.star_outline_rounded,
             'My Client Reviews',
-            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReviewsScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyReviewsScreen()),
+            ),
           ),
           _buildMenuLink(
             context,
             Icons.mic_rounded,
             'Voice Bio (30s Intro)',
-            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoiceBioScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const VoiceBioScreen()),
+            ),
           ),
           const SizedBox(height: 12),
           _buildMenuLink(
             context,
             Icons.event_available_rounded,
             'Availability Settings',
-            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AvailabilitySettingsScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AvailabilitySettingsScreen(),
+              ),
+            ),
           ),
           const SizedBox(height: 32),
         ],
@@ -1387,7 +1681,11 @@ class ProfileTabView extends StatelessWidget {
       children: [
         Text(
           val,
-          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -1408,9 +1706,22 @@ class ProfileTabView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: ExpertColors.textMuted, fontSize: 12)),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: ExpertColors.textMuted,
+                  fontSize: 12,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(val, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text(
+                val,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -1418,7 +1729,12 @@ class ProfileTabView extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuLink(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildMenuLink(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -1438,11 +1754,19 @@ class ProfileTabView extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                )
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: ExpertColors.textMuted, size: 14),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: ExpertColors.textMuted,
+              size: 14,
+            ),
           ],
         ),
       ),
@@ -1493,8 +1817,17 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: ExpertColors.cardBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Reply to $clientName', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Reply to $clientName',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: TextField(
             controller: replyController,
             maxLines: 3,
@@ -1508,17 +1841,29 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: ExpertColors.textMuted)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: ExpertColors.textMuted),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('✅ Reply sent to $clientName!'), backgroundColor: const Color(0xFF2E7D32)),
+                  SnackBar(
+                    content: Text('✅ Reply sent to $clientName!'),
+                    backgroundColor: const Color(0xFF2E7D32),
+                  ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: ExpertColors.primaryYellow, foregroundColor: Colors.black),
-              child: const Text('Send Reply', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ExpertColors.primaryYellow,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text(
+                'Send Reply',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -1540,11 +1885,21 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ExpertColors.primaryYellow),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: ExpertColors.primaryYellow,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text('Customer Reviews', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Customer Reviews',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const Spacer(),
                   const SizedBox(width: 48),
                 ],
@@ -1559,21 +1914,48 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                     children: [
                       Text(
                         '4.9',
-                        style: TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 44,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Row(
                         children: [
-                          Icon(Icons.star, color: ExpertColors.primaryYellow, size: 16),
-                          Icon(Icons.star, color: ExpertColors.primaryYellow, size: 16),
-                          Icon(Icons.star, color: ExpertColors.primaryYellow, size: 16),
-                          Icon(Icons.star, color: ExpertColors.primaryYellow, size: 16),
-                          Icon(Icons.star, color: ExpertColors.primaryYellow, size: 16),
+                          Icon(
+                            Icons.star,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
+                          Icon(
+                            Icons.star,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
+                          Icon(
+                            Icons.star,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
+                          Icon(
+                            Icons.star,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
+                          Icon(
+                            Icons.star,
+                            color: ExpertColors.primaryYellow,
+                            size: 16,
+                          ),
                         ],
                       ),
                       SizedBox(height: 4),
                       Text(
                         '100% Satisfaction',
-                        style: TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: ExpertColors.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -1613,24 +1995,48 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               // Reviews list
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: ExpertColors.primaryYellow))
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: ExpertColors.primaryYellow,
+                        ),
+                      )
                     : _filteredReviews.isEmpty
-                        ? const Center(child: Text('No reviews found for this rating.', style: TextStyle(color: ExpertColors.textMuted)))
-                        : ListView.separated(
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: _filteredReviews.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 14),
-                            itemBuilder: (context, index) {
-                              final item = _filteredReviews[index];
-                              final String clientName = item['customerName'] ?? item['customer']?['name'] ?? 'Client';
-                              final String dateStr = item['createdAt'] ?? 'Recently';
-                              final int rating = item['rating'] ?? 5;
-                              final String comment = item['comment'] ?? item['reviewText'] ?? 'Great experience talking with the expert!';
-                              final String firstLetter = clientName.isNotEmpty ? clientName[0].toUpperCase() : 'C';
+                    ? const Center(
+                        child: Text(
+                          'No reviews found for this rating.',
+                          style: TextStyle(color: ExpertColors.textMuted),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _filteredReviews.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (context, index) {
+                          final item = _filteredReviews[index];
+                          final String clientName =
+                              item['customerName'] ??
+                              item['customer']?['name'] ??
+                              'Client';
+                          final String dateStr =
+                              item['createdAt'] ?? 'Recently';
+                          final int rating = item['rating'] ?? 5;
+                          final String comment =
+                              item['comment'] ??
+                              item['reviewText'] ??
+                              'Great experience talking with the expert!';
+                          final String firstLetter = clientName.isNotEmpty
+                              ? clientName[0].toUpperCase()
+                              : 'C';
 
-                              return _buildReviewCard(clientName, firstLetter, dateStr, rating, comment);
-                            },
-                          ),
+                          return _buildReviewCard(
+                            clientName,
+                            firstLetter,
+                            dateStr,
+                            rating,
+                            comment,
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -1648,7 +2054,11 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
         decoration: BoxDecoration(
           color: isSelected ? ExpertColors.primaryYellow : ExpertColors.cardBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? ExpertColors.primaryYellow : ExpertColors.borderColor),
+          border: Border.all(
+            color: isSelected
+                ? ExpertColors.primaryYellow
+                : ExpertColors.borderColor,
+          ),
         ),
         child: Text(
           label,
@@ -1671,7 +2081,10 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             width: 45,
             child: Text(
               label,
-              style: const TextStyle(color: ExpertColors.textMuted, fontSize: 11),
+              style: const TextStyle(
+                color: ExpertColors.textMuted,
+                fontSize: 11,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -1691,7 +2104,10 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             width: 30,
             child: Text(
               percent,
-              style: const TextStyle(color: ExpertColors.textMuted, fontSize: 11),
+              style: const TextStyle(
+                color: ExpertColors.textMuted,
+                fontSize: 11,
+              ),
             ),
           ),
         ],
@@ -1699,7 +2115,13 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     );
   }
 
-  Widget _buildReviewCard(String clientName, String firstLetter, String dateStr, int rating, String feedback) {
+  Widget _buildReviewCard(
+    String clientName,
+    String firstLetter,
+    String dateStr,
+    int rating,
+    String feedback,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1714,10 +2136,16 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: ExpertColors.primaryYellow.withOpacity(0.2),
+                backgroundColor: ExpertColors.primaryYellow.withValues(
+                  alpha: 0.2,
+                ),
                 child: Text(
                   firstLetter,
-                  style: const TextStyle(color: ExpertColors.primaryYellow, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    color: ExpertColors.primaryYellow,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1727,7 +2155,11 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                   children: [
                     Text(
                       clientName,
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -1735,7 +2167,9 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                         5,
                         (idx) => Icon(
                           Icons.star_rounded,
-                          color: idx < rating ? ExpertColors.primaryYellow : Colors.white24,
+                          color: idx < rating
+                              ? ExpertColors.primaryYellow
+                              : Colors.white24,
                           size: 16,
                         ),
                       ),
@@ -1745,14 +2179,21 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               ),
               Text(
                 dateStr,
-                style: const TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                style: const TextStyle(
+                  color: ExpertColors.textMuted,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             feedback,
-            style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1762,14 +2203,25 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                 onTap: () => _showReplyDialog(clientName),
                 child: const Row(
                   children: [
-                    Icon(Icons.reply_rounded, color: ExpertColors.primaryYellow, size: 16),
+                    Icon(
+                      Icons.reply_rounded,
+                      color: ExpertColors.primaryYellow,
+                      size: 16,
+                    ),
                     SizedBox(width: 4),
-                    Text('Reply', style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Reply',
+                      style: TextStyle(
+                        color: ExpertColors.primaryYellow,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
-              )
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -1783,10 +2235,12 @@ class AvailabilitySettingsScreen extends StatefulWidget {
   const AvailabilitySettingsScreen({super.key});
 
   @override
-  State<AvailabilitySettingsScreen> createState() => _AvailabilitySettingsScreenState();
+  State<AvailabilitySettingsScreen> createState() =>
+      _AvailabilitySettingsScreenState();
 }
 
-class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen> {
+class _AvailabilitySettingsScreenState
+    extends State<AvailabilitySettingsScreen> {
   bool _isOnline = true;
 
   @override
@@ -1795,6 +2249,7 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _isOnline = authProvider.user?['isOnline'] == true;
   }
+
   bool _autoAccept = true;
   bool _dnd = false;
   int _selectedDayIndex = 0;
@@ -1811,14 +2266,25 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
   ];
 
   void _addCustomSlot() {
-    final TextEditingController timeController = TextEditingController(text: '08:00 PM - 09:00 PM');
+    final TextEditingController timeController = TextEditingController(
+      text: '08:00 PM - 09:00 PM',
+    );
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: ExpertColors.cardBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Add Time Slot', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Add Time Slot',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: TextField(
             controller: timeController,
             style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -1831,19 +2297,31 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: ExpertColors.textMuted)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: ExpertColors.textMuted),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
                 if (timeController.text.isNotEmpty) {
                   setState(() {
-                    _slots.add({'time': timeController.text, 'available': true});
+                    _slots.add({
+                      'time': timeController.text,
+                      'available': true,
+                    });
                   });
                 }
                 Navigator.pop(ctx);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: ExpertColors.primaryYellow, foregroundColor: Colors.black),
-              child: const Text('Add Slot', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ExpertColors.primaryYellow,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text(
+                'Add Slot',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -1853,16 +2331,16 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
 
   Future<void> _saveAvailability() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.token != null) {
-      try {
-        await FirebaseFirestore.instance.collection('experts').doc(authProvider.token).update({'isOnline': _isOnline});
-      } catch (_) {}
-    }
+    try {
+      await ApiService().toggleExpertStatus(_isOnline);
+    } catch (_) {}
     if (mounted) {
       authProvider.refreshProfile();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Schedule & Availability Slots updated successfully!'),
+          content: Text(
+            '✅ Schedule & Availability Slots updated successfully!',
+          ),
           backgroundColor: Color(0xFF2E7D32),
         ),
       );
@@ -1885,11 +2363,21 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ExpertColors.primaryYellow),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: ExpertColors.primaryYellow,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text('Schedule & Slots', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Schedule & Slots',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const Spacer(),
                   const SizedBox(width: 48),
                 ],
@@ -1900,9 +2388,15 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isOnline ? ExpertColors.primaryYellow : ExpertColors.cardBg,
+                  color: _isOnline
+                      ? ExpertColors.primaryYellow
+                      : ExpertColors.cardBg,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _isOnline ? ExpertColors.primaryYellow : ExpertColors.borderColor),
+                  border: Border.all(
+                    color: _isOnline
+                        ? ExpertColors.primaryYellow
+                        : ExpertColors.borderColor,
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1923,7 +2417,9 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
                           Text(
                             'Clients can call & book slots now',
                             style: TextStyle(
-                              color: _isOnline ? Colors.black87 : ExpertColors.textMuted,
+                              color: _isOnline
+                                  ? Colors.black87
+                                  : ExpertColors.textMuted,
                               fontSize: 12,
                             ),
                           ),
@@ -1951,18 +2447,35 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildSettingCard('Auto-Accept', 'Instant call connect', _autoAccept, (val) => setState(() => _autoAccept = val)),
+                    child: _buildSettingCard(
+                      'Auto-Accept',
+                      'Instant call connect',
+                      _autoAccept,
+                      (val) => setState(() => _autoAccept = val),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildSettingCard('Do Not Disturb', 'Pause calls', _dnd, (val) => setState(() => _dnd = val)),
+                    child: _buildSettingCard(
+                      'Do Not Disturb',
+                      'Pause calls',
+                      _dnd,
+                      (val) => setState(() => _dnd = val),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
 
               // Weekly Working Days Header
-              const Text('Weekly Schedule Days', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text(
+                'Weekly Schedule Days',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1971,11 +2484,20 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
                   return GestureDetector(
                     onTap: () => setState(() => _selectedDayIndex = index),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
-                        color: isSelected ? ExpertColors.primaryYellow : ExpertColors.cardBg,
+                        color: isSelected
+                            ? ExpertColors.primaryYellow
+                            : ExpertColors.cardBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? ExpertColors.primaryYellow : ExpertColors.borderColor),
+                        border: Border.all(
+                          color: isSelected
+                              ? ExpertColors.primaryYellow
+                              : ExpertColors.borderColor,
+                        ),
                       ),
                       child: Text(
                         _days[index],
@@ -1995,9 +2517,20 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Available Slots (${_days[_selectedDayIndex]})', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Available Slots (${_days[_selectedDayIndex]})',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded, color: ExpertColors.primaryYellow, size: 24),
+                    icon: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: ExpertColors.primaryYellow,
+                      size: 24,
+                    ),
                     onPressed: _addCustomSlot,
                   ),
                 ],
@@ -2010,20 +2543,40 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
                   final bool isAvail = slot['available'] == true;
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: ExpertColors.cardBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: isAvail ? ExpertColors.borderColor : Colors.redAccent.withOpacity(0.3)),
+                      border: Border.all(
+                        color: isAvail
+                            ? ExpertColors.borderColor
+                            : Colors.redAccent.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.access_time_filled_rounded, color: isAvail ? ExpertColors.primaryYellow : ExpertColors.textMuted, size: 20),
+                            Icon(
+                              Icons.access_time_filled_rounded,
+                              color: isAvail
+                                  ? ExpertColors.primaryYellow
+                                  : ExpertColors.textMuted,
+                              size: 20,
+                            ),
                             const SizedBox(width: 12),
-                            Text(slot['time'], style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                            Text(
+                              slot['time'],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                         GestureDetector(
@@ -2033,16 +2586,29 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: isAvail ? ExpertColors.primaryYellow.withOpacity(0.15) : Colors.white10,
+                              color: isAvail
+                                  ? ExpertColors.primaryYellow.withValues(
+                                      alpha: 0.15,
+                                    )
+                                  : Colors.white10,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isAvail ? ExpertColors.primaryYellow : Colors.white24),
+                              border: Border.all(
+                                color: isAvail
+                                    ? ExpertColors.primaryYellow
+                                    : Colors.white24,
+                              ),
                             ),
                             child: Text(
                               isAvail ? 'Available' : 'Disabled',
                               style: TextStyle(
-                                color: isAvail ? ExpertColors.primaryYellow : ExpertColors.textMuted,
+                                color: isAvail
+                                    ? ExpertColors.primaryYellow
+                                    : ExpertColors.textMuted,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -2064,9 +2630,14 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
                     backgroundColor: ExpertColors.primaryYellow,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('Save Schedule & Slots', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: const Text(
+                    'Save Schedule & Slots',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
               ),
             ],
@@ -2076,7 +2647,12 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
     );
   }
 
-  Widget _buildSettingCard(String title, String subtitle, bool isSelected, Function(bool) onChanged) {
+  Widget _buildSettingCard(
+    String title,
+    String subtitle,
+    bool isSelected,
+    Function(bool) onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -2091,11 +2667,21 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
-                child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Switch(
                 value: isSelected,
-                activeTrackColor: ExpertColors.primaryYellow.withOpacity(0.4),
+                activeTrackColor: ExpertColors.primaryYellow.withValues(
+                  alpha: 0.4,
+                ),
                 activeThumbColor: ExpertColors.primaryYellow,
                 inactiveTrackColor: Colors.white12,
                 inactiveThumbColor: Colors.grey,
@@ -2103,7 +2689,10 @@ class _AvailabilitySettingsScreenState extends State<AvailabilitySettingsScreen>
               ),
             ],
           ),
-          Text(subtitle, style: const TextStyle(color: ExpertColors.textMuted, fontSize: 10)),
+          Text(
+            subtitle,
+            style: const TextStyle(color: ExpertColors.textMuted, fontSize: 10),
+          ),
         ],
       ),
     );
@@ -2124,11 +2713,36 @@ class SparklinePainter extends CustomPainter {
 
     final path = Path();
     path.moveTo(0, size.height * 0.75);
-    path.quadraticBezierTo(size.width * 0.15, size.height * 0.70, size.width * 0.25, size.height * 0.60);
-    path.quadraticBezierTo(size.width * 0.35, size.height * 0.50, size.width * 0.45, size.height * 0.70);
-    path.quadraticBezierTo(size.width * 0.55, size.height * 0.90, size.width * 0.60, size.height * 0.70);
-    path.quadraticBezierTo(size.width * 0.70, size.height * 0.35, size.width * 0.80, size.height * 0.55);
-    path.quadraticBezierTo(size.width * 0.90, size.height * 0.70, size.width, size.height * 0.15);
+    path.quadraticBezierTo(
+      size.width * 0.15,
+      size.height * 0.70,
+      size.width * 0.25,
+      size.height * 0.60,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.35,
+      size.height * 0.50,
+      size.width * 0.45,
+      size.height * 0.70,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.55,
+      size.height * 0.90,
+      size.width * 0.60,
+      size.height * 0.70,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.70,
+      size.height * 0.35,
+      size.width * 0.80,
+      size.height * 0.55,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.90,
+      size.height * 0.70,
+      size.width,
+      size.height * 0.15,
+    );
 
     // 2. Create a closed path to fill under the curve
     final fillPath = Path.from(path);
@@ -2140,8 +2754,8 @@ class SparklinePainter extends CustomPainter {
     final fillPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          Colors.black.withOpacity(0.35),
-          Colors.black.withOpacity(0.0),
+          Colors.black.withValues(alpha: 0.35),
+          Colors.black.withValues(alpha: 0.0),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -2215,7 +2829,8 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
 
   @override
   Widget build(BuildContext context) {
-    final totalEarnings = _earningsData?['totalEarnings']?.toString() ?? '₹ 0.00';
+    final totalEarnings =
+        _earningsData?['totalEarnings']?.toString() ?? '₹ 0.00';
     final breakdownRaw = _earningsData?['breakdown'];
     final breakdown = breakdownRaw is Map ? breakdownRaw : {};
     final callEarnings = breakdown['callEarnings']?.toString() ?? '₹ 0.00';
@@ -2259,41 +2874,65 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total Earnings', style: TextStyle(color: ExpertColors.textMuted, fontSize: 14)),
+                const Text(
+                  'Total Earnings',
+                  style: TextStyle(color: ExpertColors.textMuted, fontSize: 14),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     Text(
                       totalEarnings,
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
                         'Live Data',
-                        style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: ExpertColors.primaryYellow,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('Hourly breakdown', style: TextStyle(color: ExpertColors.textMuted, fontSize: 12)),
+                const Text(
+                  'Hourly breakdown',
+                  style: TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                ),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 130,
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: ExpertColors.primaryYellow))
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: ExpertColors.primaryYellow,
+                          ),
+                        )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: hourlyList.map((val) {
                             final num d = num.tryParse(val.toString()) ?? 0;
-                            final double h = (d / maxVal * 110).clamp(4.0, 110.0);
+                            final double h = (d / maxVal * 110).clamp(
+                              4.0,
+                              110.0,
+                            );
                             return _buildBar(h);
                           }).toList(),
                         ),
@@ -2302,11 +2941,41 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('00', style: TextStyle(color: ExpertColors.textMuted, fontSize: 11)),
-                    Text('06', style: TextStyle(color: ExpertColors.textMuted, fontSize: 11)),
-                    Text('12', style: TextStyle(color: ExpertColors.textMuted, fontSize: 11)),
-                    Text('18', style: TextStyle(color: ExpertColors.textMuted, fontSize: 11)),
-                    Text('24', style: TextStyle(color: ExpertColors.textMuted, fontSize: 11)),
+                    Text(
+                      '00',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '06',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '12',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '18',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      '24',
+                      style: TextStyle(
+                        color: ExpertColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -2314,9 +2983,19 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
           ),
           const SizedBox(height: 20),
 
-          _buildBreakdownItem(Icons.phone_in_talk, 'Call Earnings', callEarnings, Colors.yellow),
+          _buildBreakdownItem(
+            Icons.phone_in_talk,
+            'Call Earnings',
+            callEarnings,
+            Colors.yellow,
+          ),
           _buildBreakdownItem(Icons.verified, 'Bonus', bonus, Colors.redAccent),
-          _buildBreakdownItem(Icons.monetization_on, 'Tips', tips, Colors.green),
+          _buildBreakdownItem(
+            Icons.monetization_on,
+            'Tips',
+            tips,
+            Colors.green,
+          ),
         ],
       ),
     );
@@ -2338,7 +3017,9 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
         decoration: BoxDecoration(
           color: isSelected ? ExpertColors.primaryYellow : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? ExpertColors.primaryYellow : Colors.white24),
+          border: Border.all(
+            color: isSelected ? ExpertColors.primaryYellow : Colors.white24,
+          ),
         ),
         child: Text(
           filter,
@@ -2363,7 +3044,12 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
     );
   }
 
-  Widget _buildBreakdownItem(IconData icon, String title, String val, Color iconCol) {
+  Widget _buildBreakdownItem(
+    IconData icon,
+    String title,
+    String val,
+    Color iconCol,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -2375,19 +3061,27 @@ class _EarningsLogsViewState extends State<EarningsLogsView> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: iconCol.withOpacity(0.15),
+            backgroundColor: iconCol.withValues(alpha: 0.15),
             child: Icon(icon, color: iconCol),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Text(
             val,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -2405,7 +3099,8 @@ class EarningsOverviewView extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user ?? {};
-    final double walletBalance = double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
+    final double walletBalance =
+        double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
     final String formattedBalance = '₹ ${walletBalance.toStringAsFixed(2)}';
 
     return SingleChildScrollView(
@@ -2426,17 +3121,27 @@ class EarningsOverviewView extends StatelessWidget {
                     children: [
                       const Text(
                         'Total Balance',
-                        style: TextStyle(color: ExpertColors.textMuted, fontSize: 14),
+                        style: TextStyle(
+                          color: ExpertColors.textMuted,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         formattedBalance,
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         'Available to withdraw',
-                        style: TextStyle(color: ExpertColors.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: ExpertColors.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -2448,11 +3153,29 @@ class EarningsOverviewView extends StatelessWidget {
 
           Row(
             children: [
-              Expanded(child: _buildStatusDetailCard('Available', formattedBalance, ExpertColors.primaryYellow)),
+              Expanded(
+                child: _buildStatusDetailCard(
+                  'Available',
+                  formattedBalance,
+                  ExpertColors.primaryYellow,
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _buildStatusDetailCard('Pending', '₹ 0.00', Colors.amber)),
+              Expanded(
+                child: _buildStatusDetailCard(
+                  'Pending',
+                  '₹ 0.00',
+                  Colors.amber,
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _buildStatusDetailCard('Withdrawn', '₹ 0.00', Colors.grey)),
+              Expanded(
+                child: _buildStatusDetailCard(
+                  'Withdrawn',
+                  '₹ 0.00',
+                  Colors.grey,
+                ),
+              ),
             ],
           ),
 
@@ -2465,7 +3188,9 @@ class EarningsOverviewView extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const WithdrawScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const WithdrawScreen(),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -2499,13 +3224,34 @@ class EarningsOverviewView extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: dotCol, shape: BoxShape.circle)),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: dotCol,
+                  shape: BoxShape.circle,
+                ),
+              ),
               const SizedBox(width: 6),
-              Text(title, style: const TextStyle(color: ExpertColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: ExpertColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(val, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(
+            val,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -2534,7 +3280,7 @@ class BalanceRingPainter extends CustomPainter {
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -1.5, // start angle
-      4.8,  // sweep angle
+      4.8, // sweep angle
       false,
       activePaint,
     );
@@ -2556,13 +3302,16 @@ class WithdrawScreen extends StatefulWidget {
 
 class _WithdrawScreenState extends State<WithdrawScreen> {
   String _selectedMethod = 'Bank'; // 'Bank' or 'UPI'
-  final TextEditingController _amountController = TextEditingController(text: '2500');
+  final TextEditingController _amountController = TextEditingController(
+    text: '2500',
+  );
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user ?? {};
-    final double walletBalance = double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
+    final double walletBalance =
+        double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
     final String formattedBalance = '₹ ${walletBalance.toStringAsFixed(2)}';
 
     return Scaffold(
@@ -2584,7 +3333,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   const Spacer(),
                   const Text(
                     'Withdraw',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   const SizedBox(width: 48), // Balancing spacer
@@ -2605,10 +3358,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: ExpertColors.primaryYellow.withOpacity(0.2),
+                      color: ExpertColors.primaryYellow.withValues(alpha: 0.2),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
@@ -2620,17 +3373,29 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                         children: [
                           const Text(
                             'Available Balance',
-                            style: TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             formattedBalance,
-                            style: const TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           const Text(
                             'Minimum withdrawal ₹500',
-                            style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -2652,12 +3417,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             child: Container(
                               width: 14,
                               height: 14,
-                              decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                color: Colors.black,
+                                shape: BoxShape.circle,
+                              ),
                               child: Center(
                                 child: Container(
                                   width: 4,
                                   height: 4,
-                                  decoration: const BoxDecoration(color: ExpertColors.primaryYellow, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: ExpertColors.primaryYellow,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2671,7 +3442,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                               height: 8,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(2),
-                                border: Border.all(color: Colors.black, width: 1.5),
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -2686,7 +3460,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
               // Select Withdraw Method Header
               const Text(
                 'Select Withdraw Method',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -2703,7 +3481,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     color: ExpertColors.cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _selectedMethod == 'Bank' ? ExpertColors.primaryYellow : ExpertColors.borderColor,
+                      color: _selectedMethod == 'Bank'
+                          ? ExpertColors.primaryYellow
+                          : ExpertColors.borderColor,
                     ),
                   ),
                   child: Row(
@@ -2711,12 +3491,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: _selectedMethod == 'Bank' ? ExpertColors.primaryYellow.withOpacity(0.15) : Colors.white10,
+                          color: _selectedMethod == 'Bank'
+                              ? ExpertColors.primaryYellow.withValues(
+                                  alpha: 0.15,
+                                )
+                              : Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.account_balance_outlined,
-                          color: _selectedMethod == 'Bank' ? ExpertColors.primaryYellow : Colors.white60,
+                          color: _selectedMethod == 'Bank'
+                              ? ExpertColors.primaryYellow
+                              : Colors.white60,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -2726,12 +3512,19 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           children: [
                             Text(
                               'Bank Transfer',
-                              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             SizedBox(height: 4),
                             Text(
                               'HDFC Bank •••• 3456',
-                              style: TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                              style: TextStyle(
+                                color: ExpertColors.textMuted,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -2742,7 +3535,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: _selectedMethod == 'Bank' ? ExpertColors.primaryYellow : Colors.white30,
+                            color: _selectedMethod == 'Bank'
+                                ? ExpertColors.primaryYellow
+                                : Colors.white30,
                             width: 2,
                           ),
                         ),
@@ -2751,7 +3546,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                                 child: Container(
                                   width: 10,
                                   height: 10,
-                                  decoration: const BoxDecoration(color: ExpertColors.primaryYellow, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: ExpertColors.primaryYellow,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               )
                             : null,
@@ -2775,7 +3573,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     color: ExpertColors.cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _selectedMethod == 'UPI' ? ExpertColors.primaryYellow : ExpertColors.borderColor,
+                      color: _selectedMethod == 'UPI'
+                          ? ExpertColors.primaryYellow
+                          : ExpertColors.borderColor,
                     ),
                   ),
                   child: Row(
@@ -2783,12 +3583,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: _selectedMethod == 'UPI' ? ExpertColors.primaryYellow.withOpacity(0.15) : Colors.white10,
+                          color: _selectedMethod == 'UPI'
+                              ? ExpertColors.primaryYellow.withValues(
+                                  alpha: 0.15,
+                                )
+                              : Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.qr_code_2_outlined,
-                          color: _selectedMethod == 'UPI' ? ExpertColors.primaryYellow : Colors.white60,
+                          color: _selectedMethod == 'UPI'
+                              ? ExpertColors.primaryYellow
+                              : Colors.white60,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -2798,12 +3604,19 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           children: [
                             Text(
                               'UPI',
-                              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             SizedBox(height: 4),
                             Text(
                               'ancy@yblupi',
-                              style: TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                              style: TextStyle(
+                                color: ExpertColors.textMuted,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -2814,7 +3627,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: _selectedMethod == 'UPI' ? ExpertColors.primaryYellow : Colors.white30,
+                            color: _selectedMethod == 'UPI'
+                                ? ExpertColors.primaryYellow
+                                : Colors.white30,
                             width: 2,
                           ),
                         ),
@@ -2823,7 +3638,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                                 child: Container(
                                   width: 10,
                                   height: 10,
-                                  decoration: const BoxDecoration(color: ExpertColors.primaryYellow, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: ExpertColors.primaryYellow,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               )
                             : null,
@@ -2837,7 +3655,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
               // Enter Amount section
               const Text(
                 'Enter Amount',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               Container(
@@ -2846,17 +3668,28 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: ExpertColors.primaryYellow),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: Row(
                   children: [
                     const Text(
                       '₹ ',
-                      style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: ExpertColors.primaryYellow,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Expanded(
                       child: TextField(
                         controller: _amountController,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -2874,18 +3707,30 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () async {
-                    final double amt = double.tryParse(_amountController.text) ?? 0.0;
+                    final double amt =
+                        double.tryParse(_amountController.text) ?? 0.0;
                     if (amt < 500) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Minimum withdrawal amount is ₹500')),
+                        const SnackBar(
+                          content: Text('Minimum withdrawal amount is ₹500'),
+                        ),
                       );
                       return;
                     }
-                    await ApiService().requestPayoutWithdrawal(amt, {'method': _selectedMethod});
+                    await ApiService().requestPayoutWithdrawal(amt, {
+                      'method': _selectedMethod,
+                    });
                     if (mounted) {
-                      Provider.of<AuthProvider>(context, listen: false).refreshProfile();
+                      Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      ).refreshProfile();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('🎉 Withdrawal request of ₹${amt.toStringAsFixed(2)} submitted successfully!')),
+                        SnackBar(
+                          content: Text(
+                            '🎉 Withdrawal request of ₹${amt.toStringAsFixed(2)} submitted successfully!',
+                          ),
+                        ),
                       );
                       Navigator.pop(context);
                     }
@@ -2911,13 +3756,21 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                 children: [
                   const Text(
                     'Withdrawal History',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   GestureDetector(
                     onTap: () {},
                     child: const Text(
                       'View All',
-                      style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: ExpertColors.primaryYellow,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -2940,19 +3793,30 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       children: [
                         Text(
                           'Withdrawn to HDFC Bank',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           '18 July, 11:20 AM • Success',
-                          style: TextStyle(color: ExpertColors.textMuted, fontSize: 12),
+                          style: TextStyle(
+                            color: ExpertColors.textMuted,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                     Text(
                       '₹ 5,000',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    )
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),

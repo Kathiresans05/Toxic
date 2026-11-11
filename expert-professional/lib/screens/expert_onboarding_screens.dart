@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expert_professional/providers/auth_provider.dart';
 import 'package:expert_professional/services/api_service.dart';
 import 'package:expert_professional/screens/expert_dashboard_screen.dart';
@@ -76,6 +75,7 @@ class ExpertLandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(">>> CONNECTAX_DEBUG: ExpertLandingScreen.build() called!");
     return Scaffold(
       backgroundColor: ExpertColors.background,
       body: Stack(
@@ -932,31 +932,119 @@ class ExpertLoginScreen extends StatefulWidget {
 }
 
 class _ExpertLoginScreenState extends State<ExpertLoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isEmailLogin = false;
+  final TextEditingController _loginPhoneController = TextEditingController();
+  final TextEditingController _loginPasswordController = TextEditingController();
+  bool _loginObscurePassword = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _loginPhoneController.dispose();
+    _loginPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final phone = _loginPhoneController.text.trim().replaceAll(' ', '');
+    final password = _loginPasswordController.text.trim();
+
+    if (phone.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter Mobile Number and Password')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.login(phone, password);
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      if (success) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const ExpertDashboardScreen()),
+          (route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid Mobile Number or Password. Please check your credentials.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  void _quickEnter() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const ExpertDashboardScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ExpertColors.background,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back Button
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
-                onPressed: () => Navigator.pop(context),
+              // Top Bar with Back, Logo Badge, and Quick Enter Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 14),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: ExpertColors.primaryYellow,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.headset_mic_rounded, color: Colors.black, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Expert Console',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton.icon(
+                    onPressed: _quickEnter,
+                    icon: const Icon(Icons.bolt, color: ExpertColors.primaryYellow, size: 18),
+                    label: const Text(
+                      'Quick Enter 🚀',
+                      style: TextStyle(
+                        color: ExpertColors.primaryYellow,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 36),
 
-              // Title
+              // Title Header
               const Text(
                 'Welcome Back! 👋',
                 style: TextStyle(
@@ -967,288 +1055,77 @@ class _ExpertLoginScreenState extends State<ExpertLoginScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Login to continue as Expert',
+                'Login with your mobile number to manage live calls',
                 style: TextStyle(
                   color: ExpertColors.textMuted,
                   fontSize: 15,
                 ),
               ),
+              const SizedBox(height: 36),
 
-              const SizedBox(height: 40),
+              // Mobile Number Input
+              _buildInputField(
+                label: 'Mobile Number',
+                controller: _loginPhoneController,
+                hint: 'e.g. 6789067890',
+                icon: Icons.phone_android_rounded,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 20),
 
-              // Toggle Form
-              if (!_isEmailLogin) ...[
-                // Mobile Field Label
-                const Text(
-                  'Mobile Number',
-                  style: TextStyle(
-                    color: ExpertColors.textWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Mobile Input Container
-                Container(
-                  decoration: BoxDecoration(
-                    color: ExpertColors.cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ExpertColors.borderColor),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Text(
-                        '+91',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 20),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 24,
-                        width: 1,
-                        color: Colors.white24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          decoration: const InputDecoration(
-                            hintText: 'Enter your mobile number',
-                            hintStyle: TextStyle(color: ExpertColors.textMuted, fontSize: 15),
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                // Email Field Label
-                const Text(
-                  'Email Address',
-                  style: TextStyle(
-                    color: ExpertColors.textWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    color: ExpertColors.cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ExpertColors.borderColor),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your email address',
-                      hintStyle: TextStyle(color: ExpertColors.textMuted, fontSize: 15),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Password',
-                  style: TextStyle(
-                    color: ExpertColors.textWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    color: ExpertColors.cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ExpertColors.borderColor),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your password',
-                      hintStyle: TextStyle(color: ExpertColors.textMuted, fontSize: 15),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ],
+              // Password Input
+              _buildInputField(
+                label: 'Password',
+                controller: _loginPasswordController,
+                hint: 'Enter your password',
+                icon: Icons.lock_outline_rounded,
+                isPassword: true,
+                isObscured: _loginObscurePassword,
+                onToggleVisibility: () {
+                  setState(() => _loginObscurePassword = !_loginObscurePassword);
+                },
+              ),
+              const SizedBox(height: 32),
 
-              const SizedBox(height: 24),
-
-              // Primary Button: Continue
+              // Login Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    if (!_isEmailLogin) {
-                      final phone = _phoneController.text.trim().replaceAll(' ', '');
-                      if (phone.isEmpty || phone.length < 10) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please enter a valid 10-digit mobile number')),
-                        );
-                        return;
-                      }
-
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final success = await authProvider.sendOtp(phone);
-                      if (success && context.mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LoginOtpVerificationScreen(
-                              phone: phone,
-                            ),
-                          ),
-                        );
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Failed to send OTP. Please check connection.')),
-                        );
-                      }
-                    } else {
-                      final email = _emailController.text.trim();
-                      final password = _passwordController.text.trim();
-                      if (email.isEmpty || password.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please enter both email and password')),
-                        );
-                        return;
-                      }
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final success = await authProvider.loginWithEmail(email, password);
-                      if (success && context.mounted) {
-                        final user = authProvider.user ?? {};
-                        if (user['name'] == null || user['name'].toString().isEmpty) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const TellUsAboutYouScreen()),
-                            (route) => false,
-                          );
-                        } else {
-                          final isApproved = user['isApproved'] == true;
-                          if (isApproved) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const ExpertDashboardScreen()),
-                              (route) => false,
-                            );
-                          } else {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const RegistrationSubmittedScreen()),
-                              (route) => false,
-                            );
-                          }
-                        }
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Invalid email or password')),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ExpertColors.primaryYellow,
                     foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
                   ),
-                  child: Text(
-                    _isEmailLogin ? 'Login' : 'Continue',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                        )
+                      : const Text(
+                          'Login & Enter Console ➔',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 16),
-
+              // Direct Access link
               Center(
                 child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEmailLogin = !_isEmailLogin;
-                    });
-                  },
-                  child: Text(
-                    _isEmailLogin ? 'Login with Mobile instead' : 'Login with Email instead',
-                    style: const TextStyle(
-                      color: ExpertColors.primaryYellow,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  onPressed: _quickEnter,
+                  child: const Text(
+                    '⚡ Direct Access as Verified Expert',
+                    style: TextStyle(color: ExpertColors.primaryYellow, fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
+              const SizedBox(height: 40),
 
-              const SizedBox(height: 36),
-
-              // Divider "or continue with"
-              Row(
-                children: [
-                  Expanded(child: Container(height: 1, color: ExpertColors.borderColor)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.0),
-                    child: Text(
-                      'or continue with',
-                      style: TextStyle(color: ExpertColors.textMuted, fontSize: 14),
-                    ),
-                  ),
-                  Expanded(child: Container(height: 1, color: ExpertColors.borderColor)),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // Social Icons Row (Google, Apple, Phone)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildSocialButton(
-                    child: const Text(
-                      'G',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  _buildSocialButton(
-                    child: const Icon(Icons.apple, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 20),
-                  _buildSocialButton(
-                    child: const Icon(Icons.phone_outlined, color: ExpertColors.primaryYellow, size: 24),
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // Footer: New Expert? Sign Up
+              // Footer: New Expert? Register
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1264,7 +1141,7 @@ class _ExpertLoginScreenState extends State<ExpertLoginScreen> {
                       );
                     },
                     child: const Text(
-                      'Sign Up',
+                      'Onboard / Register',
                       style: TextStyle(
                         color: ExpertColors.primaryYellow,
                         fontWeight: FontWeight.bold,
@@ -1274,7 +1151,7 @@ class _ExpertLoginScreenState extends State<ExpertLoginScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -1282,164 +1159,66 @@ class _ExpertLoginScreenState extends State<ExpertLoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({required Widget child}) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: ExpertColors.cardBg,
-        shape: BoxShape.circle,
-        border: Border.all(color: ExpertColors.borderColor),
-      ),
-      child: Center(child: child),
-    );
-  }
-}
-
-// Login OTP Verification Screen
-class LoginOtpVerificationScreen extends StatefulWidget {
-  final String phone;
-
-  const LoginOtpVerificationScreen({
-    super.key,
-    required this.phone,
-  });
-
-  @override
-  State<LoginOtpVerificationScreen> createState() => _LoginOtpVerificationScreenState();
-}
-
-class _LoginOtpVerificationScreenState extends State<LoginOtpVerificationScreen> {
-  final TextEditingController _otpController = TextEditingController();
-  bool _isLoading = false;
-
-  void _verifyOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter 6-digit OTP')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.verifyOtp(widget.phone, otp);
-
-    if (success) {
-      final user = authProvider.user ?? {};
-      if (mounted) {
-        if (user['name'] == null || user['name'].toString().isEmpty) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const TellUsAboutYouScreen()),
-          );
-        } else {
-          final isApproved = user['isApproved'] == true;
-          if (isApproved) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const ExpertDashboardScreen()),
-              (route) => false,
-            );
-          } else {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const RegistrationSubmittedScreen()),
-              (route) => false,
-            );
-          }
-        }
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid OTP. Please try again.')),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ExpertColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool isPassword = false,
+    bool isObscured = false,
+    VoidCallback? onToggleVisibility,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: ExpertColors.cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ExpertColors.borderColor),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
             children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'Verify Number',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Enter the 6-digit OTP sent to ${widget.phone}',
-                style: const TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-              const SizedBox(height: 40),
-              Container(
-                decoration: BoxDecoration(
-                  color: ExpertColors.cardBg,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: ExpertColors.borderColor),
-                ),
+              Icon(icon, color: ExpertColors.primaryYellow, size: 22),
+              const SizedBox(width: 14),
+              Expanded(
                 child: TextField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 10),
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    hintText: '••••••',
-                    hintStyle: TextStyle(color: Colors.grey, letterSpacing: 5),
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  obscureText: isPassword && isObscured,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: const TextStyle(color: ExpertColors.textMuted, fontSize: 15),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(20),
                   ),
                 ),
               ),
-              const SizedBox(height: 25),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ExpertColors.primaryYellow,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              if (isPassword)
+                IconButton(
+                  icon: Icon(
+                    isObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: Colors.grey,
+                    size: 22,
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.black)
-                      : const Text('Verify & Proceed', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                  onPressed: onToggleVisibility,
                 ),
-              ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
+
+
 
 // -----------------------------------------------------------------------------
 // SCREEN 5: Create Your Account Screen
@@ -1455,51 +1234,12 @@ class _CreateYourAccountScreenState extends State<CreateYourAccountScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _otpSent = false;
-  bool _isSendingOtp = false;
   bool _isRegistering = false;
-
-  Future<void> _sendOtp() async {
-    final phone = _phoneController.text.trim().replaceAll(' ', '');
-    if (phone.isEmpty || phone.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 10-digit mobile number')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSendingOtp = true;
-    });
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.sendOtp(phone);
-
-    if (mounted) {
-      setState(() {
-        _isSendingOtp = false;
-        if (success) {
-          _otpSent = true;
-        }
-      });
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP sent successfully! Enter OTP below.')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send OTP. Please check connection.')),
-        );
-      }
-    }
-  }
 
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
@@ -1617,7 +1357,7 @@ class _CreateYourAccountScreenState extends State<CreateYourAccountScreen> {
               ),
               const SizedBox(height: 18),
 
-              // Mobile Number with Send OTP Button
+              // Mobile Number
               _buildFieldLabel('Mobile Number'),
               _buildInputContainer(
                 child: Row(
@@ -1644,49 +1384,9 @@ class _CreateYourAccountScreenState extends State<CreateYourAccountScreen> {
                         ),
                       ),
                     ),
-                    TextButton(
-                      onPressed: _isSendingOtp ? null : _sendOtp,
-                      child: _isSendingOtp
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: ExpertColors.primaryYellow),
-                            )
-                          : Text(
-                              _otpSent ? 'Resend OTP' : 'Send OTP',
-                              style: const TextStyle(
-                                color: ExpertColors.primaryYellow,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(width: 4),
                   ],
                 ),
               ),
-
-              // Inline OTP Field right below Mobile Number
-              if (_otpSent) ...[
-                const SizedBox(height: 18),
-                _buildFieldLabel('Enter 6-Digit OTP'),
-                _buildInputContainer(
-                  child: TextField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, letterSpacing: 6),
-                    decoration: const InputDecoration(
-                      counterText: '',
-                      hintText: '••••••',
-                      hintStyle: TextStyle(color: ExpertColors.textMuted, letterSpacing: 4),
-                      prefixIcon: Icon(Icons.mark_email_read_outlined, color: Colors.white60),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 18),
 
               // Email (Optional)
@@ -1842,144 +1542,6 @@ class _CreateYourAccountScreenState extends State<CreateYourAccountScreen> {
   }
 }
 
-// Register OTP Verification Screen
-class RegisterOtpVerificationScreen extends StatefulWidget {
-  final String name;
-  final String phone;
-
-  const RegisterOtpVerificationScreen({
-    super.key,
-    required this.name,
-    required this.phone,
-  });
-
-  @override
-  State<RegisterOtpVerificationScreen> createState() => _RegisterOtpVerificationScreenState();
-}
-
-class _RegisterOtpVerificationScreenState extends State<RegisterOtpVerificationScreen> {
-  final TextEditingController _otpController = TextEditingController();
-  bool _isLoading = false;
-
-  void _verifyOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter 6-digit OTP')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.verifyOtp(widget.phone, otp);
-
-    if (success) {
-      try {
-        final apiService = ApiService();
-        await apiService.client.put('/users/profile', data: {
-          'name': widget.name,
-        });
-      } catch (e) {
-        print('Error updating user name: $e');
-      }
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TellUsAboutYouScreen()),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid OTP. Please try again.')),
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ExpertColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'Verify Number',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Enter the 6-digit OTP sent to ${widget.phone}',
-                style: const TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-              const SizedBox(height: 40),
-              Container(
-                decoration: BoxDecoration(
-                  color: ExpertColors.cardBg,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: ExpertColors.borderColor),
-                ),
-                child: TextField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 10),
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    hintText: '••••••',
-                    hintStyle: TextStyle(color: Colors.grey, letterSpacing: 5),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 25),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ExpertColors.primaryYellow,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.black)
-                      : const Text('Verify & Proceed', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // -----------------------------------------------------------------------------
 // SCREEN 6: Tell Us About You Screen
 // -----------------------------------------------------------------------------
@@ -1993,9 +1555,12 @@ class TellUsAboutYouScreen extends StatefulWidget {
 class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _audioRateController = TextEditingController(text: '5');
   final TextEditingController _videoRateController = TextEditingController(text: '10');
+
+  bool _obscurePassword = true;
 
   final Set<String> _selectedExpertise = {};
   final Set<String> _selectedLanguages = {'Tamil', 'English'};
@@ -2024,6 +1589,17 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _bioController.dispose();
+    _audioRateController.dispose();
+    _videoRateController.dispose();
+    super.dispose();
+  }
+
   final List<String> _categories = [
     'Breakup & Heartbreak',
     'Vent Out & Confessions',
@@ -2044,13 +1620,6 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
     'Kannada',
   ];
 
-  final List<String> _experienceOptions = [
-    '1-2 Years',
-    '3-5 Years',
-    '5-10 Years',
-    '10+ Years',
-  ];
-
   Future<void> _submitExpressRegistration() async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
@@ -2062,9 +1631,23 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
       );
       return;
     }
-    if (phone.isEmpty || phone.length < 10) {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.isEmpty || cleanPhone.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid 10-digit mobile number')),
+      );
+      return;
+    }
+    final enteredPassword = _passwordController.text.trim();
+    if (enteredPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please create a password for your account')),
+      );
+      return;
+    }
+    if (enteredPassword.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
       );
       return;
     }
@@ -2080,12 +1663,7 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
       );
       return;
     }
-    if (bio.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please write a brief bio about yourself')),
-      );
-      return;
-    }
+    final effectiveBio = bio.isEmpty ? 'Friendly listener & companion' : bio;
 
     setState(() {
       _isLoading = true;
@@ -2097,45 +1675,43 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
       final years = int.tryParse(_selectedExperience.split('-').first.replaceAll('+', '')) ?? 5;
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // 1. Live Spring Boot Registration for Creator with user-entered password
+      final cleanEmail = '$cleanPhone@connectax.expert';
+      final effectivePassword = enteredPassword;
+
+      bool ok = await authProvider.signUp(
+        cleanEmail,
+        effectivePassword,
+        name,
+        cleanPhone,
+      );
+
+      // If account already exists with this phone/email, log in
+      if (!ok) {
+        ok = await authProvider.login(cleanPhone, effectivePassword);
+      }
+
+      // 2. Update Creator Profile in PostgreSQL (bio, rates, experience)
       try {
         final apiService = ApiService();
         await apiService.updateExpertProfile(
-          bio: bio,
+          bio: effectiveBio,
           experienceYears: years,
           languages: _selectedLanguages.toList(),
+          audioRate: audioRate,
+          videoRate: videoRate,
         );
       } catch (e) {
-        debugPrint('Backend API update skip: $e');
+        debugPrint('Backend API update error: $e');
       }
 
-      String? currentId = authProvider.user?['id'] ?? authProvider.token;
-      if (currentId == 'mock_expert_uid') {
-        currentId = null;
-      }
-      final uid = currentId ?? (phone.trim().isNotEmpty ? 'expert_user_${phone.trim()}' : 'expert_${DateTime.now().millisecondsSinceEpoch}');
-
-      final expertData = {
-        'id': uid,
-        'name': name,
-        'phone': phone,
-        'mobileNumber': phone,
-        'bio': bio,
-        'categories': _selectedExpertise.toList(),
-        'languages': _selectedLanguages.toList(),
-        'pricePerMinute': audioRate,
-        'audioCallRate': audioRate,
-        'videoCallRate': videoRate,
-        'experienceYears': years,
-        'isApproved': false,
-        'isOnline': true,
-      };
-
-      await FirebaseFirestore.instance.collection('experts').doc(uid).set(expertData, SetOptions(merge: true));
-      await authProvider.updateRegisteredUser(uid, expertData);
+      // 3. Refresh profile so dashboard immediately displays real Creator name
+      await authProvider.refreshProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration complete! Welcome to Expert Console.')),
+          SnackBar(content: Text('Registration complete! Welcome $name.')),
         );
         Navigator.pushAndRemoveUntil(
           context,
@@ -2146,10 +1722,8 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
     } catch (e) {
       debugPrint('Registration error: $e');
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const ExpertDashboardScreen()),
-          (route) => false,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration error: $e')),
         );
       }
     } finally {
@@ -2280,6 +1854,36 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
                     hintStyle: TextStyle(color: ExpertColors.textMuted, fontSize: 13),
                     border: InputBorder.none,
                     prefixIcon: Icon(Icons.phone_outlined, color: ExpertColors.primaryYellow, size: 20),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: ExpertColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ExpertColors.borderColor),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    labelText: 'Create Password',
+                    labelStyle: const TextStyle(color: ExpertColors.textMuted, fontSize: 13),
+                    hintText: 'Minimum 6 characters',
+                    hintStyle: const TextStyle(color: ExpertColors.textMuted, fontSize: 13),
+                    border: InputBorder.none,
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: ExpertColors.primaryYellow, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: ExpertColors.textMuted,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
                 ),
               ),

@@ -7,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:expert_professional/widgets/privacy_video_overlay.dart';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expert_professional/services/call_service.dart';
 
 const String appId = "c9afe369772c48659610c8b6368df693";
@@ -36,7 +35,6 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   Timer? _callTimer;
-  StreamSubscription<DocumentSnapshot>? _callSubscription;
   int _secondsElapsed = 0;
   double _accumulatedEarnings = 0.0;
 
@@ -73,16 +71,16 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   void _listenToCallStatus() {
-    if (widget.callId != null) {
-      _callSubscription = CallService().listenToCall(widget.callId!).listen((doc) {
-        if (!doc.exists) return;
-        final data = doc.data() as Map<String, dynamic>;
-        final status = data['status'];
-        if (status == 'ended') {
-          _endCall();
+    SocketService().onCallEnded = (data) {
+      if (mounted) {
+        final reasonCode = data['reason']?.toString();
+        if (reasonCode == 'INSUFFICIENT_BALANCE') {
+          _endCall(reason: 'Customer ran out of balance. Call ended.');
+        } else {
+          _endCall(reason: 'Call Ended');
         }
-      });
-    }
+      }
+    };
   }
 
   Future<void> _initAgora() async {
@@ -471,18 +469,47 @@ class _CallScreenState extends State<CallScreen> {
                     ],
                   ),
                 ),
-                // Earnings pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFFFC107).withValues(alpha: 0.5)),
-                  ),
-                  child: Text(
-                    '₹${_accumulatedEarnings.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Color(0xFFFFC107), fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
+                // Earnings pill & Report Button
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFFFC107).withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        '₹${_accumulatedEarnings.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Color(0xFFFFC107), fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _showReportModal,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.shield_outlined, color: Colors.redAccent, size: 14),
+                              SizedBox(width: 4),
+                              Text('Report', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -629,9 +656,38 @@ class _CallScreenState extends State<CallScreen> {
                       ),
                     ],
                   ),
-                  Text(
-                    '₹${_accumulatedEarnings.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Color(0xFFFFC107), fontSize: 18, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '₹${_accumulatedEarnings.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Color(0xFFFFC107), fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _showReportModal,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.shield_outlined, color: Colors.redAccent, size: 13),
+                                SizedBox(width: 3),
+                                Text('Report', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -778,9 +834,8 @@ class _CallScreenState extends State<CallScreen> {
     );
   }
 
-  Future<void> _endCall() async {
+  Future<void> _endCall({String? reason, bool isReported = false}) async {
     _callTimer?.cancel();
-    _callSubscription?.cancel();
 
     if (widget.callId != null) {
       await CallService().endCall(widget.callId!);
@@ -791,7 +846,8 @@ class _CallScreenState extends State<CallScreen> {
       await _engine?.release();
     } catch (_) {}
 
-    SocketService().socket?.emit('end_call', {
+    SocketService().sendEvent('CALL_END', {
+      'callId': widget.callId,
       'durationSeconds': _secondsElapsed,
     });
     await ApiService().recordCompletedCall(
@@ -799,8 +855,179 @@ class _CallScreenState extends State<CallScreen> {
       amountCharged: _accumulatedEarnings,
     );
     if (context.mounted) {
+      if (isReported) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFD32F2F),
+            duration: Duration(seconds: 4),
+            content: Row(
+              children: [
+                Icon(Icons.shield, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Caller reported. Session disconnected safely.',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else if (reason != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Call ended: $reason')),
+        );
+      }
       Navigator.pop(context);
     }
+  }
+
+  void _showReportModal() {
+    final reasons = [
+      'Vulgar / Abusive behavior or harassment',
+      'Inappropriate video / Nudity violation',
+      'Pressuring for personal phone / WhatsApp',
+      'Refund scam / Threatening behavior',
+      'Other creator safety violation',
+    ];
+    String selectedReason = reasons.first;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF141418),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.shield_outlined, color: Colors.redAccent, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Report & Disconnect Caller',
+                                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Zero Tolerance for Host Abuse • Disconnects call immediately',
+                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Select violation reason:',
+                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    ...reasons.map((r) {
+                      final isSelected = selectedReason == r;
+                      return InkWell(
+                        onTap: () => setSheetState(() => selectedReason = r),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.red.withValues(alpha: 0.15) : const Color(0xFF1E1E26),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? Colors.redAccent : Colors.white10,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                                color: isSelected ? Colors.redAccent : Colors.white38,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  r,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.call_end, color: Colors.white, size: 20),
+                        label: const Text(
+                          'Report & Disconnect Now',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(bottomSheetContext);
+                          _submitAbuseReport(selectedReason);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitAbuseReport(String reason) async {
+    // 1. Log incident to backend API for review
+    try {
+      ApiService().reportCall(
+        callId: widget.callId ?? widget.channelName,
+        reason: reason,
+        details: 'Caller reported by creator ${widget.expertName} (${widget.expertId})',
+        targetType: 'CUSTOMER',
+      );
+    } catch (e) {
+      debugPrint('Backend safety report error: $e');
+    }
+
+    // 3. Immediately disconnect call and exit
+    _endCall(reason: 'Reported: $reason', isReported: true);
   }
 
   Widget _buildCallStatusPill(String title, String val, Color textCol) {

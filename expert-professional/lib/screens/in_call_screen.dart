@@ -63,8 +63,7 @@ class _InCallScreenState extends State<InCallScreen> with SingleTickerProviderSt
 
   void _endCall() {
     _timer?.cancel();
-    // Signal call end via socket
-    SocketService().socket?.emit('end_call', {
+    SocketService().sendEvent('CALL_END', {
       'channelName': widget.channelName,
       'durationSeconds': _callDurationSeconds,
     });

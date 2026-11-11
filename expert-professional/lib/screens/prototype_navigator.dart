@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:expert_professional/theme/app_theme.dart';
 import 'package:expert_professional/screens/expert_onboarding_screens.dart';
-import 'package:expert_professional/screens/onboarding_screens.dart';
 import 'package:expert_professional/screens/verification_screens.dart';
 import 'package:expert_professional/screens/dashboard_screens.dart';
 import 'package:expert_professional/screens/registration_screen.dart';
@@ -20,7 +19,6 @@ class PrototypeNavigator extends StatelessWidget {
       '6. Tell Us About You': const TellUsAboutYouScreen(),
       '7. Documents Verification': const DocumentsVerificationScreen(),
       '8. Registration Submitted': const RegistrationSubmittedScreen(),
-      '9. OTP Verification': const OtpVerificationScreen(phone: '9876543210'),
       '10. Expert Profile Register': const RegistrationScreen(),
       '11. Voice Verification mic': const VoiceVerificationScreen(),
       '12. KYC Upload proofs': const KYCUploadScreen(),

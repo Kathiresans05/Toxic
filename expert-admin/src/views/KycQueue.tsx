@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   FileCheck2,
   CheckCircle2,
@@ -7,6 +7,10 @@ import {
   AlertTriangle,
   Loader2,
   ExternalLink,
+  Mic,
+  Play,
+  Pause,
+  Volume2,
 } from 'lucide-react';
 import { KycItem } from '../types';
 
@@ -18,9 +22,25 @@ interface KycQueueProps {
 export const KycQueue: React.FC<KycQueueProps> = ({ kycList, onReviewKyc }) => {
   const [selectedKyc, setSelectedKyc] = useState<KycItem | null>(null);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
+  const [previewVoiceKyc, setPreviewVoiceKyc] = useState<KycItem | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState<boolean>(false);
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current
+        .play()
+        .then(() => setIsPlayingAudio(true))
+        .catch(() => setIsPlayingAudio(false));
+    }
+  };
 
   const handleApprove = async (kycId: string) => {
     setIsSubmitting(true);
@@ -80,7 +100,7 @@ export const KycQueue: React.FC<KycQueueProps> = ({ kycList, onReviewKyc }) => {
                   <th className="py-3 px-6">Document Type</th>
                   <th className="py-3 px-6">Document ID</th>
                   <th className="py-3 px-6">Submitted Date</th>
-                  <th className="py-3 px-6">Review Documents</th>
+                  <th className="py-3 px-6">Review Documents & Voice Audit</th>
                   <th className="py-3 px-6 text-right">Verification Action</th>
                 </tr>
               </thead>
@@ -128,6 +148,16 @@ export const KycQueue: React.FC<KycQueueProps> = ({ kycList, onReviewKyc }) => {
                             <Eye className="w-3 h-3" /> Selfie
                           </button>
                         )}
+                        <button
+                          onClick={() => {
+                            setPreviewVoiceKyc(kyc);
+                            setIsPlayingAudio(false);
+                          }}
+                          className="px-2 py-1 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 hover:bg-amber-100 flex items-center gap-1 border border-amber-300"
+                          title="Listen to Voice Sample to verify female creator identity"
+                        >
+                          <Mic className="w-3 h-3 text-amber-600" /> Voice Check
+                        </button>
                       </div>
                     </td>
                     <td className="py-3.5 px-6 text-right space-x-1.5 whitespace-nowrap">
@@ -179,6 +209,111 @@ export const KycQueue: React.FC<KycQueueProps> = ({ kycList, onReviewKyc }) => {
                   (e.target as any).src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=800';
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Verification & Gender Identification Modal */}
+      {previewVoiceKyc && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Mic className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Voice Verification Audit</h3>
+                  <p className="text-[11px] text-slate-500">{previewVoiceKyc.expertName} • Female Identity Audit</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (audioRef.current) audioRef.current.pause();
+                  setPreviewVoiceKyc(null);
+                  setIsPlayingAudio(false);
+                }}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold px-2 py-1"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 mb-5 flex items-start gap-2.5">
+              <div className="text-amber-600 font-bold text-base leading-none mt-0.5">⚠️</div>
+              <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                <strong>Female Creator Verification Protocol:</strong> Listen to this audio recording submitted during KYC to confirm the creator's voice is authentic and female before approving.
+              </p>
+            </div>
+
+            {/* Audio Waveform Player */}
+            <div className="bg-slate-950 rounded-2xl p-6 mb-6 text-white flex flex-col items-center shadow-inner">
+              <audio
+                ref={audioRef}
+                src={previewVoiceKyc.voiceSampleUrl || 'https://actions.google.com/sounds/v1/speech/female_voice_hello.ogg'}
+                onEnded={() => setIsPlayingAudio(false)}
+                onPause={() => setIsPlayingAudio(false)}
+                onPlay={() => setIsPlayingAudio(true)}
+                className="hidden"
+              />
+              <div className="flex items-center gap-1.5 h-14 mb-4">
+                {[14, 26, 42, 22, 38, 50, 28, 40, 16, 34, 46, 24, 38, 16, 28, 36, 20].map((h, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-1 rounded-full transition-all duration-300 ${
+                      isPlayingAudio ? 'bg-amber-400 animate-pulse' : 'bg-slate-700'
+                    }`}
+                    style={{ height: isPlayingAudio ? `${h}px` : '12px' }}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={toggleAudio}
+                className="flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95"
+              >
+                {isPlayingAudio ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-slate-950" /> Pause Voice Sample
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-slate-950" /> Play Voice Sample (0:15s)
+                  </>
+                )}
+              </button>
+              <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-400 font-medium">
+                <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Submitted KYC Audio • Verify Voice Tone</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-3">
+              <button
+                onClick={() => {
+                  if (audioRef.current) audioRef.current.pause();
+                  setSelectedKyc(previewVoiceKyc);
+                  setRejectionReason('Voice verification failed: Voice note does not verify as female creator identity.');
+                  setPreviewVoiceKyc(null);
+                  setIsPlayingAudio(false);
+                  setIsRejectModalOpen(true);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+              >
+                Reject (Voice Mismatch)
+              </button>
+              <button
+                onClick={() => {
+                  if (audioRef.current) audioRef.current.pause();
+                  const id = previewVoiceKyc.id;
+                  setPreviewVoiceKyc(null);
+                  setIsPlayingAudio(false);
+                  handleApprove(id);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1.5 transition-colors"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Approve (Verified Female)
+              </button>
             </div>
           </div>
         </div>

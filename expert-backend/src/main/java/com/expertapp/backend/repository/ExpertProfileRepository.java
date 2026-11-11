@@ -1,5 +1,6 @@
 package com.expertapp.backend.repository;
 
+import com.expertapp.backend.entity.CreatorTier;
 import com.expertapp.backend.entity.ExpertProfile;
 import com.expertapp.backend.entity.KycStatus;
 import com.expertapp.backend.entity.User;
@@ -18,6 +19,8 @@ public interface ExpertProfileRepository extends JpaRepository<ExpertProfile, UU
     Page<ExpertProfile> findByApprovedTrueAndAvailableTrue(Pageable pageable);
     Page<ExpertProfile> findByCategoryIdAndApprovedTrueAndAvailableTrue(UUID categoryId, Pageable pageable);
     Page<ExpertProfile> findByKycStatus(KycStatus kycStatus, Pageable pageable);
+    Page<ExpertProfile> findByTier(CreatorTier tier, Pageable pageable);
+    long countByTier(CreatorTier tier);
     long countByApprovedTrue();
     long countByKycStatus(KycStatus kycStatus);
 }

@@ -3,25 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:expert_professional/theme/app_theme.dart';
 import 'package:expert_professional/screens/expert_onboarding_screens.dart';
 import 'package:expert_professional/providers/auth_provider.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-
 import 'package:expert_professional/screens/expert_dashboard_screen.dart';
-
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint("Handling background message: ${message.messageId}");
-}
+import 'package:expert_professional/services/foreground_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  // Initialize ForegroundService singleton and method call handlers
+  ForegroundService();
   
   runApp(
     ChangeNotifierProvider(
@@ -36,7 +24,9 @@ class ConnectaXApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(">>> CONNECTAX_DEBUG: ConnectaXApp.build() called");
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'ConnectaX Expert Console',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
@@ -48,33 +38,11 @@ class ConnectaXApp extends StatelessWidget {
 class LauncherScreen extends StatelessWidget {
   const LauncherScreen({super.key});
 
-  void _routeUser(BuildContext context, AuthProvider auth) {
-    if (!auth.isLoggedIn) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ExpertLandingScreen()),
-      );
-      return;
-    }
-
-    final user = auth.user ?? {};
-    if (user['name'] == null || user['name'].toString().isEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TellUsAboutYouScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ExpertDashboardScreen()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
+        print(">>> CONNECTAX_DEBUG: LauncherScreen.build() isInitialized=${auth.isInitialized}, isLoggedIn=${auth.isLoggedIn}, user=${auth.user}");
         if (!auth.isInitialized) {
           return const Scaffold(
             backgroundColor: Color(0xFF08080A),
@@ -84,17 +52,16 @@ class LauncherScreen extends StatelessWidget {
           );
         }
 
-        // Trigger navigation after build frame finishes
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _routeUser(context, auth);
-        });
+        if (!auth.isLoggedIn) {
+          return const ExpertLandingScreen();
+        }
 
-        return const Scaffold(
-          backgroundColor: Color(0xFF08080A),
-          body: Center(
-            child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-          ),
-        );
+        final user = auth.user ?? {};
+        if (user['name'] == null || user['name'].toString().isEmpty) {
+          return const TellUsAboutYouScreen();
+        }
+
+        return const ExpertDashboardScreen();
       },
     );
   }

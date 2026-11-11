@@ -112,7 +112,7 @@ class _VoiceBioScreenState extends State<VoiceBioScreen> with TickerProviderStat
     });
 
     final String simulatedVoiceUrl = 'https://expert-cdn.com/audio/voice_bio_${DateTime.now().millisecondsSinceEpoch}.mp3';
-    final success = await ApiService().updateExpertProfile(voiceSampleUrl: simulatedVoiceUrl);
+    await ApiService().updateExpertProfile(voiceSampleUrl: simulatedVoiceUrl);
 
     if (mounted) {
       setState(() {

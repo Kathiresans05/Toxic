@@ -1,11 +1,12 @@
 import React from 'react';
-import { RefreshCw, Search, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Search, ShieldCheck, AlertCircle } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
   subtitle: string;
   onRefresh: () => void;
   isRefreshing: boolean;
+  backendOnline?: boolean;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
   searchPlaceholder?: string;
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   subtitle,
   onRefresh,
   isRefreshing,
+  backendOnline = true,
   searchQuery = '',
   onSearchChange,
   searchPlaceholder = 'Quick search records, ID, or phone...',
@@ -49,10 +51,18 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Live Backend Status */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-[11px] font-medium text-emerald-800">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Spring Boot 3 API</span>
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors ${
+          backendOnline
+            ? 'bg-emerald-50 border-emerald-200/80 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-700'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+          {backendOnline ? (
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          ) : (
+            <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+          )}
+          <span>{backendOnline ? 'Spring Boot 3 API' : 'Backend Offline'}</span>
         </div>
 
         {/* Refresh Button */}

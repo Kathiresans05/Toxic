@@ -22,7 +22,7 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    @PostMapping("/create-order")
+    @PostMapping({"/create-order", "/razorpay/order"})
     @Operation(summary = "Create Razorpay Order for wallet recharge or call prepayment")
     public ResponseEntity<Map<String, Object>> createOrder(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -32,12 +32,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.createOrder(userPrincipal.getId(), amount, currency));
     }
 
-    @PostMapping("/verify")
+    @PostMapping({"/verify", "/razorpay/verify"})
     @Operation(summary = "Verify client payment signature")
     public ResponseEntity<Map<String, Object>> verifyPayment(@RequestBody Map<String, String> request) {
-        String orderId = request.get("orderId");
-        String paymentId = request.get("paymentId");
-        String signature = request.get("signature");
+        String orderId = request.containsKey("orderId") ? request.get("orderId") : request.get("razorpay_order_id");
+        String paymentId = request.containsKey("paymentId") ? request.get("paymentId") : request.get("razorpay_payment_id");
+        String signature = request.containsKey("signature") ? request.get("signature") : request.get("razorpay_signature");
 
         boolean verified = paymentService.verifyAndCompletePayment(orderId, paymentId, signature);
         return ResponseEntity.ok(Map.of("verified", verified));

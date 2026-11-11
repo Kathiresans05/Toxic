@@ -74,18 +74,35 @@ public class PaymentService {
         Transaction transaction = transactionRepository.findByGatewayOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found for order: " + orderId));
 
+        // Idempotency: If already completed, do not credit wallet again
+        if (transaction.getStatus() == PaymentStatus.SUCCESS) {
+            log.info("Order {} already processed successfully", orderId);
+            return true;
+        }
+
         // Signature verification: HmacSHA256(orderId + "|" + paymentId, secret)
         String payload = orderId + "|" + paymentId;
         String generatedSignature = HmacUtils.hmacSha256Hex(razorpayKeySecret, payload);
 
-        // In test mode or when secrets are default placeholders, allow verification
-        boolean isValid = generatedSignature.equals(signature) || razorpayKeySecret.contains("placeholder");
+        // Verify valid HMAC signature (or allow dev bypass if test secret)
+        boolean isValid = generatedSignature.equalsIgnoreCase(signature) || 
+                          ("rzp_secret_placeholder".equals(razorpayKeySecret) && "dev_signature".equals(signature));
 
         if (isValid) {
             transaction.setGatewayPaymentId(paymentId);
             transaction.setGatewaySignature(signature);
             transaction.setStatus(PaymentStatus.SUCCESS);
             transactionRepository.save(transaction);
+
+            // Automatically and securely credit User Wallet in atomic transaction
+            User user = transaction.getUser();
+            if (user != null) {
+                BigDecimal currentBalance = user.getWalletBalance() != null ? user.getWalletBalance() : BigDecimal.ZERO;
+                user.setWalletBalance(currentBalance.add(transaction.getAmount()));
+                userRepository.save(user);
+                log.info("Credited wallet for user {} with amount {}", user.getId(), transaction.getAmount());
+            }
+
             log.info("Payment successfully verified for order {}", orderId);
             return true;
         } else {

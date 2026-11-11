@@ -38,11 +38,11 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:flowing-gibbon-198025.upstash.io}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:gQAAAAAAAwWJAAIgcDJjMmU3ZDhmMmZhNGQ0NWI5YjNjZGVmZjE0ZTYyYmMxMw}
+      password: ${REDIS_PASSWORD:}
       ssl:
-        enabled: ${REDIS_SSL:true}
+        enabled: ${REDIS_SSL:false}
       timeout: 5000ms
 
 # JWT Security Configuration
@@ -69,10 +69,6 @@ app:
       app-id: ${CASHFREE_APP_ID:}
       secret-key: ${CASHFREE_SECRET_KEY:}
       api-version: "2023-08-01"
-
-  # Firebase Cloud Messaging
-  firebase:
-    credentials-path: ${FIREBASE_CREDENTIALS_PATH:firebase-service-account.json}
 
   # AWS S3 Storage
   aws:

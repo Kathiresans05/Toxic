@@ -4,8 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expert_professional/services/api_service.dart';
 import 'package:expert_professional/services/socket_service.dart';
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -26,26 +24,8 @@ class AuthProvider extends ChangeNotifier {
     _loadPersistedAuth();
   }
 
-  StreamSubscription? _userSub;
-
-  @override
-  void dispose() {
-    _userSub?.cancel();
-    super.dispose();
-  }
-
   void _listenToUserDoc() {
-    if (_token != null) {
-      _userSub?.cancel();
-      _userSub = FirebaseFirestore.instance.collection('experts').doc(_token).snapshots().listen((doc) {
-        if (doc.exists && doc.data() != null) {
-          _user = {...?_user, ...doc.data()!, 'id': doc.id};
-          notifyListeners();
-        }
-      }, onError: (e) {
-        debugPrint('Expert doc snapshot listener error: $e');
-      });
-    }
+    // User profile is synchronized via REST API (refreshProfile) and WebSocket
   }
 
   Future<void> _loadPersistedAuth() async {
@@ -73,7 +53,6 @@ class AuthProvider extends ChangeNotifier {
             'isApproved': profile['approved'] ?? false,
           };
           _socketService.connect(userId);
-          _registerFcmToken();
         } else {
           await logout();
         }
@@ -85,6 +64,8 @@ class AuthProvider extends ChangeNotifier {
     _isInitialized = true;
     notifyListeners();
   }
+
+  Future<bool> login(String identifier, String password) => loginWithEmail(identifier, password);
 
   Future<bool> loginWithEmail(String email, String password) async {
     _isLoading = true;
@@ -115,7 +96,6 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('user_id', _user!['id']);
         
         _socketService.connect(_user!['id']);
-        _registerFcmToken();
         
         _isLoading = false;
         notifyListeners();
@@ -163,7 +143,6 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('user_id', _user!['id']);
         
         _socketService.connect(_user!['id']);
-        _registerFcmToken();
         
         _isLoading = false;
         notifyListeners();
@@ -186,7 +165,6 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove('user_id');
     _apiService.client.options.headers.remove('Authorization');
     _socketService.disconnect();
-    _userSub?.cancel();
     notifyListeners();
   }
 
@@ -195,11 +173,6 @@ class AuthProvider extends ChangeNotifier {
     _user = {...?_user, ...expertData, 'id': uid};
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', uid);
-    try {
-      await FirebaseFirestore.instance.collection('experts').doc(uid).set(expertData, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('Error writing updated registered user to Firestore: $e');
-    }
     _listenToUserDoc();
     notifyListeners();
   }
@@ -225,83 +198,6 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Refresh error: $e');
-    }
-  }
-
-  Future<bool> sendOtp(String phone) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true;
-  }
-
-  Future<bool> verifyOtp(String phone, String otp) async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      final response = await _apiService.verifyOtp(phone, otp);
-      if (response != null && response['token'] != null) {
-        _token = response['token'];
-        _user = response['user'];
-        
-        _apiService.client.options.headers['Authorization'] = 'Bearer $_token';
-        
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', _token!);
-        
-        _socketService.connect(_user!['id'] ?? _token!);
-        _listenToUserDoc();
-        _registerFcmToken();
-        
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Verify OTP Error: $e');
-    }
-    
-    // Direct Instant Auth Fallback (No OTP verification required for fast testing)
-    _token = 'expert_user_$phone';
-    _user = {
-      'id': _token,
-      'phone': phone,
-      'mobileNumber': phone,
-      'isApproved': false,
-      'isOnline': true,
-    };
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', _token!);
-    _listenToUserDoc();
-    
-    _isLoading = false;
-    notifyListeners();
-    return true;
-  }
-
-  Future<void> _registerFcmToken() async {
-    try {
-      final messaging = FirebaseMessaging.instance;
-      NotificationSettings settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        String? fcmToken = await messaging.getToken().catchError((e) {
-          debugPrint('FCM Web token request skipped: $e');
-          return null;
-        });
-        if (fcmToken != null && _token != null) {
-          await FirebaseFirestore.instance.collection('experts').doc(_token).set({
-            'fcmToken': fcmToken,
-          }, SetOptions(merge: true));
-          debugPrint('FCM Token registered for Expert: $fcmToken');
-        }
-      }
-    } catch (e) {
-      debugPrint('FCM Registration error: $e');
     }
   }
 }

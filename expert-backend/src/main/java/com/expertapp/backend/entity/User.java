@@ -40,6 +40,9 @@ public class User {
     @Column(name = "fcm_token")
     private String fcmToken;
 
+    @Column(name = "wallet_balance", precision = 12, scale = 2)
+    private java.math.BigDecimal walletBalance = java.math.BigDecimal.ZERO;
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -90,6 +93,9 @@ public class User {
 
     public String getFcmToken() { return fcmToken; }
     public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+
+    public java.math.BigDecimal getWalletBalance() { return walletBalance != null ? walletBalance : java.math.BigDecimal.ZERO; }
+    public void setWalletBalance(java.math.BigDecimal walletBalance) { this.walletBalance = walletBalance; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

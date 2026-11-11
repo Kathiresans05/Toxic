@@ -23,8 +23,12 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  final TextEditingController _emailController = TextEditingController(text: 'admin@connectax.com');
-  final TextEditingController _passwordController = TextEditingController(text: '••••••••••••');
+  final TextEditingController _emailController = TextEditingController(
+    text: 'admin@connectax.com',
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: '••••••••••••',
+  );
   bool _obscurePassword = true;
   bool _rememberMe = true;
 
@@ -108,10 +112,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               const SizedBox(height: 8),
               const Text(
                 'Welcome back! Please login to continue',
-                style: TextStyle(
-                  color: AdminColors.textMuted,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AdminColors.textMuted, fontSize: 14),
               ),
               const SizedBox(height: 32),
 
@@ -138,7 +139,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   hintText: 'Enter Password',
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: AdminColors.textMuted,
                     ),
                     onPressed: () {
@@ -175,7 +178,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       const SizedBox(width: 8),
                       const Text(
                         'Remember me',
-                        style: TextStyle(color: AdminColors.textMuted, fontSize: 13),
+                        style: TextStyle(
+                          color: AdminColors.textMuted,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -202,7 +208,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminTwoFactorScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const AdminTwoFactorScreen(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -224,11 +232,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shield_outlined, color: AdminColors.primaryYellow, size: 16),
+                  Icon(
+                    Icons.shield_outlined,
+                    color: AdminColors.primaryYellow,
+                    size: 16,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Secure Admin Access',
-                    style: TextStyle(color: AdminColors.textMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: AdminColors.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -254,7 +269,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration({required String hintText, Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration({
+    required String hintText,
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: const TextStyle(color: Colors.white24),
@@ -357,15 +375,15 @@ class _AdminTwoFactorScreenState extends State<AdminTwoFactorScreen> {
                     shape: BoxShape.rectangle,
                     boxShadow: [
                       BoxShadow(
-                        color: AdminColors.primaryYellow.withOpacity(0.15),
+                        color: AdminColors.primaryYellow.withValues(
+                          alpha: 0.15,
+                        ),
                         blurRadius: 30,
                         spreadRadius: 5,
-                      )
+                      ),
                     ],
                   ),
-                  child: CustomPaint(
-                    painter: ShieldLockPainter(),
-                  ),
+                  child: CustomPaint(painter: ShieldLockPainter()),
                 ),
               ),
               const SizedBox(height: 48),
@@ -382,10 +400,7 @@ class _AdminTwoFactorScreenState extends State<AdminTwoFactorScreen> {
               const SizedBox(height: 8),
               const Text(
                 'We have sent a 6 digit OTP to',
-                style: TextStyle(
-                  color: AdminColors.textMuted,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AdminColors.textMuted, fontSize: 14),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -422,11 +437,15 @@ class _AdminTwoFactorScreenState extends State<AdminTwoFactorScreen> {
                         contentPadding: EdgeInsets.zero,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AdminColors.borderColor),
+                          borderSide: const BorderSide(
+                            color: AdminColors.borderColor,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AdminColors.primaryYellow),
+                          borderSide: const BorderSide(
+                            color: AdminColors.primaryYellow,
+                          ),
                         ),
                       ),
                     ),
@@ -454,7 +473,9 @@ class _AdminTwoFactorScreenState extends State<AdminTwoFactorScreen> {
                     // Navigate to AdminDashboardScreen inside dashboard_screens.dart
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const AdminDashboardScreen(),
+                      ),
                       (route) => route.isFirst,
                     );
                   },
@@ -493,8 +514,18 @@ class ShieldLockPainter extends CustomPainter {
     // Shield outer shape path
     path.moveTo(size.width * 0.5, 0);
     path.quadraticBezierTo(size.width * 0.9, 0, size.width, size.height * 0.2);
-    path.quadraticBezierTo(size.width * 0.95, size.height * 0.75, size.width * 0.5, size.height);
-    path.quadraticBezierTo(size.width * 0.05, size.height * 0.75, 0, size.height * 0.2);
+    path.quadraticBezierTo(
+      size.width * 0.95,
+      size.height * 0.75,
+      size.width * 0.5,
+      size.height,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.05,
+      size.height * 0.75,
+      0,
+      size.height * 0.2,
+    );
     path.quadraticBezierTo(size.width * 0.1, 0, size.width * 0.5, 0);
     path.close();
 
@@ -525,7 +556,11 @@ class ShieldLockPainter extends CustomPainter {
     // Lock body box
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(center.dx, center.dy + 8), width: 26, height: 20),
+        Rect.fromCenter(
+          center: Offset(center.dx, center.dy + 8),
+          width: 26,
+          height: 20,
+        ),
         const Radius.circular(4),
       ),
       lockPaint,
@@ -536,7 +571,14 @@ class ShieldLockPainter extends CustomPainter {
       ..color = Colors.black
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(center.dx, center.dy + 6), 3, holePaint);
-    canvas.drawRect(Rect.fromCenter(center: Offset(center.dx, center.dy + 11), width: 2, height: 6), holePaint);
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(center.dx, center.dy + 11),
+        width: 2,
+        height: 6,
+      ),
+      holePaint,
+    );
   }
 
   @override

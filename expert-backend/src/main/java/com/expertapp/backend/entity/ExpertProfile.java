@@ -57,6 +57,10 @@ public class ExpertProfile {
     @Column(name = "kyc_status", nullable = false)
     private KycStatus kycStatus = KycStatus.NOT_SUBMITTED;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tier", nullable = false)
+    private CreatorTier tier = CreatorTier.STANDARD;
+
     @Column(name = "wallet_balance", precision = 12, scale = 2)
     private BigDecimal walletBalance = BigDecimal.ZERO;
 
@@ -125,6 +129,9 @@ public class ExpertProfile {
 
     public KycStatus getKycStatus() { return kycStatus; }
     public void setKycStatus(KycStatus kycStatus) { this.kycStatus = kycStatus; }
+
+    public CreatorTier getTier() { return tier; }
+    public void setTier(CreatorTier tier) { this.tier = tier; }
 
     public BigDecimal getWalletBalance() { return walletBalance; }
     public void setWalletBalance(BigDecimal walletBalance) { this.walletBalance = walletBalance; }

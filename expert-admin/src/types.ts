@@ -29,6 +29,7 @@ export interface CreatorItem {
   phone: string;
   headline: string;
   categoryName?: string;
+  tier: 'STANDARD' | 'ELITE';
   audioRatePerMin: number;
   videoRatePerMin: number;
   isAvailable: boolean;
@@ -50,6 +51,7 @@ export interface KycItem {
   documentFrontUrl: string;
   documentBackUrl?: string;
   selfieUrl?: string;
+  voiceSampleUrl?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   rejectionReason?: string;
   createdAt: string;

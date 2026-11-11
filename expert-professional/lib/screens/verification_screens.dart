@@ -146,22 +146,24 @@ class KYCUploadScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Upload KYC Documents')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('ID Proof Validation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            const Text('Upload Aadhaar Card or PAN Card copies for platform safety regulations.', style: TextStyle(color: Colors.grey)),
+            const Text('Creator Identity & Safety Validation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 8),
+            const Text('Upload official ID and record a voice verification sample for Admin KYC review.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 24),
+            _buildUploadCard('Upload Aadhaar Card (Front)', Icons.add_photo_alternate, 'JPG/PNG document scan'),
+            const SizedBox(height: 14),
+            _buildUploadCard('Upload PAN Card Copy', Icons.credit_card_rounded, 'PAN document scan'),
+            const SizedBox(height: 14),
+            _buildUploadCard('Record Voice Verification Sample', Icons.mic_rounded, '10s Audio saying "I am ready to consult on ExpertApp"', isVoice: true),
             const SizedBox(height: 30),
-            _buildUploadCard('Upload Aadhaar Card (Front)', Icons.add_photo_alternate),
-            const SizedBox(height: 15),
-            _buildUploadCard('Upload PAN Card Copy', Icons.add_photo_alternate),
-            const Spacer(),
             SizedBox(
               width: double.infinity,
-              height: 55,
+              height: 52,
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -169,31 +171,62 @@ class KYCUploadScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const WaitingForApprovalScreen()),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: const Text('Submit KYC Docs', style: TextStyle(color: Colors.white, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Submit KYC Verification', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUploadCard(String label, IconData icon) {
+  Widget _buildUploadCard(String label, IconData icon, String subtitle, {bool isVoice = false}) {
     return Container(
       width: double.infinity,
-      height: 140,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isVoice ? AppTheme.primary.withValues(alpha: 0.3) : Colors.white10),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          Icon(icon, size: 40, color: AppTheme.primary),
-          const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: isVoice ? AppTheme.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+            child: Icon(icon, size: 24, color: isVoice ? AppTheme.primary : Colors.white70),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
+                const SizedBox(height: 3),
+                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isVoice ? AppTheme.primary : Colors.white12,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              isVoice ? 'Record' : 'Upload',
+              style: TextStyle(
+                color: isVoice ? Colors.black : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -236,7 +269,7 @@ class WaitingForApprovalScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: const Text('Enter Sandbox Dashboard', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text('Go to Dashboard', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
           ],

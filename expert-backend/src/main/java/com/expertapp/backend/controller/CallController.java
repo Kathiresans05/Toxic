@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/calls")
 @Tag(name = "Calling", description = "Agora RTC Call Initiation, Signaling, and Lifecycle Management")
@@ -40,9 +42,30 @@ public class CallController {
         return ResponseEntity.ok(callService.acceptCall(callId, userPrincipal.getId()));
     }
 
+    @PostMapping("/{callId}/reject")
+    @Operation(summary = "Creator rejects incoming call")
+    public ResponseEntity<Map<String, String>> rejectCall(@PathVariable String callId) {
+        callService.rejectCall(callId);
+        return ResponseEntity.ok(Map.of("message", "Call rejected successfully"));
+    }
+
     @PostMapping("/{callId}/end")
     @Operation(summary = "End consultation call and calculate billing/commission")
     public ResponseEntity<CallSessionResponse> endCall(@PathVariable String callId) {
         return ResponseEntity.ok(callService.endCall(callId));
     }
+
+    @PostMapping("/{callId}/report")
+    @Operation(summary = "Report an active or recent call for abuse/safety violations")
+    public ResponseEntity<Map<String, String>> reportCall(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String callId,
+            @RequestBody(required = false) Map<String, String> body) {
+        String reason = body != null ? body.getOrDefault("reason", "Inappropriate behavior") : "Inappropriate behavior";
+        String details = body != null ? body.getOrDefault("details", "") : "";
+        String targetType = body != null ? body.getOrDefault("targetType", "CREATOR") : "CREATOR";
+        callService.reportCall(userPrincipal != null ? userPrincipal.getId() : null, callId, reason, details, targetType);
+        return ResponseEntity.ok(Map.of("message", "Report submitted successfully for safety review"));
+    }
 }
+

@@ -13,7 +13,7 @@ public class Review {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "call_session_id", nullable = false, unique = true)
+    @JoinColumn(name = "call_session_id", nullable = true)
     private CallSession callSession;
 
     @ManyToOne(fetch = FetchType.LAZY)

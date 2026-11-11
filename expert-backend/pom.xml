@@ -22,7 +22,6 @@
         <springdoc.version>2.3.0</springdoc.version>
         <aws.s3.version>2.25.10</aws.s3.version>
         <razorpay.version>1.4.3</razorpay.version>
-        <firebase.version>9.2.0</firebase.version>
     </properties>
 
     <dependencies>
@@ -110,12 +109,10 @@
             <artifactId>razorpay-java</artifactId>
             <version>${razorpay.version}</version>
         </dependency>
-
-        <!-- Firebase Admin for Push Notifications -->
         <dependency>
-            <groupId>com.google.firebase</groupId>
-            <artifactId>firebase-admin</artifactId>
-            <version>${firebase.version}</version>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
         </dependency>
 
         <!-- AWS SDK for S3 File Storage -->

@@ -161,9 +161,17 @@ class ApiService {
     });
   }
 
+  async toggleUserVerification(userId: string, verified: boolean): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/users/${userId}/toggle-verification`, {
+      method: 'PUT',
+      body: JSON.stringify({ verified }),
+    });
+  }
+
   // 3. Creator Management
-  async getCreators(page = 0, size = 50): Promise<CreatorItem[]> {
-    const data = await this.request<any>(`/admin/creators?page=${page}&size=${size}`);
+  async getCreators(page = 0, size = 50, tier = 'ALL'): Promise<CreatorItem[]> {
+    const tierParam = tier && tier !== 'ALL' ? `&tier=${encodeURIComponent(tier)}` : '';
+    const data = await this.request<any>(`/admin/creators?page=${page}&size=${size}${tierParam}`);
     const items = data.content || [];
     return items.map((c: any) => ({
       id: c.id,
@@ -173,6 +181,7 @@ class ApiService {
       phone: c.user?.phoneNumber || '',
       headline: c.headline || 'Consultant',
       categoryName: c.category?.name || 'General',
+      tier: (c.tier || 'STANDARD') as 'STANDARD' | 'ELITE',
       audioRatePerMin: c.audioRatePerMin ? Number(c.audioRatePerMin) : 0,
       videoRatePerMin: c.videoRatePerMin ? Number(c.videoRatePerMin) : 0,
       isAvailable: c.available ?? false,
@@ -190,6 +199,20 @@ class ApiService {
     return this.request<{ message: string }>(`/admin/creators/${creatorId}/approval`, {
       method: 'PUT',
       body: JSON.stringify({ approved }),
+    });
+  }
+
+  async updateCreatorTier(creatorId: string, tier: 'STANDARD' | 'ELITE'): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/creators/${creatorId}/tier`, {
+      method: 'PUT',
+      body: JSON.stringify({ tier }),
+    });
+  }
+
+  async updateTierRates(tier: 'STANDARD' | 'ELITE', audioRate: number, videoRate: number, applyToExisting = true): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/admin/pricing/tier-rates', {
+      method: 'PUT',
+      body: JSON.stringify({ tier, audioRate, videoRate, applyToExisting }),
     });
   }
 
@@ -213,6 +236,7 @@ class ApiService {
       documentFrontUrl: item.documentFrontUrl || '',
       documentBackUrl: item.documentBackUrl || undefined,
       selfieUrl: item.selfieUrl || undefined,
+      voiceSampleUrl: item.voiceSampleUrl || item.expert?.voiceBioUrl || item.voiceVerificationUrl || 'https://actions.google.com/sounds/v1/speech/female_voice_hello.ogg',
       status: item.status || 'PENDING',
       rejectionReason: item.rejectionReason,
       createdAt: item.createdAt ? new Date(item.createdAt).toLocaleString('en-IN') : 'Recently',
@@ -244,6 +268,10 @@ class ApiService {
       expertEarnings: call.expertEarnings ? Number(call.expertEarnings) : 0,
       createdAt: call.createdAt ? new Date(call.createdAt).toLocaleString('en-IN') : 'Recently',
     }));
+  }
+
+  async getRecentCalls(page = 0, size = 50): Promise<CallLogItem[]> {
+    return this.getCallLogs(page, size);
   }
 
   // 6. Payments & Transactions

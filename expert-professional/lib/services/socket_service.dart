@@ -1,56 +1,132 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:expert_professional/constants.dart';
 
 class SocketService {
-  IO.Socket? _socket;
+  WebSocket? _socket;
+  Timer? _reconnectTimer;
+  Timer? _pingTimer;
+  String? _currentUserId;
+
+  Function(Map<String, dynamic>)? onCallAccepted;
+  Function(Map<String, dynamic>)? onCallRejected;
+  Function(Map<String, dynamic>)? onCallEnded;
   Function(Map<String, dynamic>)? onIncomingCall;
   Function(Map<String, dynamic>)? onReceiveMessage;
-  
+
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
   SocketService._internal();
 
-  IO.Socket? get socket => _socket;
+  bool get isConnected => _socket != null && _socket!.readyState == WebSocket.open;
 
-  void connect(String userId) {
-    if (_socket != null && _socket!.connected) return;
+  void connect(String userId) async {
+    if (userId.isEmpty) return;
+    _currentUserId = userId;
 
-    _socket = IO.io(
-      AppConstants.baseUrl,
-      IO.OptionBuilder()
-          .setTransports(['websocket']) 
-          .disableAutoConnect()
-          .setQuery({'userId': userId}) 
-          .build(),
-    );
+    if (isConnected) return;
 
-    _socket!.connect();
+    try {
+      final base = AppConstants.baseUrl
+          .replaceFirst('http://', 'ws://')
+          .replaceFirst('https://', 'wss://')
+          .replaceFirst('/api/v1', '');
+      final wsUrl = '$base/ws/calls?userId=$userId';
 
-    _socket!.onConnect((_) {
-      print('Connected to WebSocket server');
-    });
+      debugPrint('Professional connecting to Native WebSocket: $wsUrl');
+      _socket = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 5));
 
-    _socket!.on('incoming_call', (data) {
-      print('Incoming call event received: $data');
-      if (onIncomingCall != null && data is Map) {
-        onIncomingCall!(Map<String, dynamic>.from(data));
-      }
-    });
+      // Register message
+      sendEvent('REGISTER', {'userId': userId});
 
-    _socket!.on('receive_message', (data) {
-      print('Chat message received: $data');
-      if (onReceiveMessage != null && data is Map) {
-        onReceiveMessage!(Map<String, dynamic>.from(data));
-      }
-    });
+      _socket!.listen(
+        (data) {
+          try {
+            final Map<String, dynamic> message = jsonDecode(data as String);
+            _handleMessage(message);
+          } catch (e) {
+            debugPrint('Error parsing ws message: $e');
+          }
+        },
+        onError: (err) {
+          debugPrint('Professional WebSocket error: $err');
+          _scheduleReconnect();
+        },
+        onDone: () {
+          debugPrint('Professional WebSocket disconnected');
+          _scheduleReconnect();
+        },
+        cancelOnError: true,
+      );
 
-    _socket!.onDisconnect((_) {
-      print('Disconnected from WebSocket server');
-    });
+      // Keepalive ping every 25s
+      _pingTimer?.cancel();
+      _pingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+        if (isConnected) {
+          _socket?.add(jsonEncode({'event': 'PING'}));
+        }
+      });
+    } catch (e) {
+      debugPrint('Failed to connect Professional WebSocket: $e');
+      _scheduleReconnect();
+    }
+  }
+
+  void _handleMessage(Map<String, dynamic> msg) {
+    final event = msg['event']?.toString().toUpperCase();
+    debugPrint('Professional received WS Event: $event -> $msg');
+
+    switch (event) {
+      case 'INCOMING_CALL':
+      case 'CALL_INVITE':
+        onIncomingCall?.call(msg);
+        break;
+      case 'CALL_ACCEPTED':
+      case 'CALL_ACCEPT':
+        onCallAccepted?.call(msg);
+        break;
+      case 'CALL_REJECTED':
+      case 'CALL_REJECT':
+        onCallRejected?.call(msg);
+        break;
+      case 'CALL_ENDED':
+      case 'CALL_END':
+        onCallEnded?.call(msg);
+        break;
+      case 'RECEIVE_MESSAGE':
+        onReceiveMessage?.call(msg);
+        break;
+    }
+  }
+
+  void sendEvent(String event, Map<String, dynamic> data) {
+    if (isConnected) {
+      final payload = Map<String, dynamic>.from(data);
+      payload['event'] = event;
+      _socket?.add(jsonEncode(payload));
+    }
+  }
+
+  void _scheduleReconnect() {
+    _socket = null;
+    _pingTimer?.cancel();
+    _reconnectTimer?.cancel();
+    if (_currentUserId != null && _currentUserId!.isNotEmpty) {
+      _reconnectTimer = Timer(const Duration(seconds: 5), () {
+        if (!isConnected && _currentUserId != null) {
+          connect(_currentUserId!);
+        }
+      });
+    }
   }
 
   void disconnect() {
-    _socket?.disconnect();
+    _currentUserId = null;
+    _pingTimer?.cancel();
+    _reconnectTimer?.cancel();
+    _socket?.close();
     _socket = null;
   }
 }

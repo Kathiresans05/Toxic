@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ public interface CallSessionRepository extends JpaRepository<CallSession, UUID> 
     Page<CallSession> findByCustomerId(UUID customerId, Pageable pageable);
     Page<CallSession> findByExpertId(UUID expertId, Pageable pageable);
     Page<CallSession> findByStatus(CallStatus status, Pageable pageable);
+    List<CallSession> findByStatus(CallStatus status);
     long countByStatus(CallStatus status);
 
     @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM CallSession c WHERE c.status = 'ENDED'")

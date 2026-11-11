@@ -24,6 +24,7 @@ export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('overview');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [backendOnline, setBackendOnline] = useState<boolean>(true);
 
   // Live Database Metrics (defaults to 0 / empty before fetch)
   const [stats, setStats] = useState<DashboardStats>({
@@ -50,29 +51,30 @@ export const App: React.FC = () => {
       const [fetchedStats, fetchedKyc, fetchedCalls, fetchedUsers] = await Promise.all([
         api.getDashboardStats().catch(err => {
           console.warn('Stats fetch warning:', err);
-          return {
-            totalCustomers: 0,
-            totalCreators: 0,
-            activeCallsCount: 0,
-            completedCallsCount: 0,
-            totalGrossVolume: 0,
-            totalPlatformRevenue: 0,
-            pendingKycCount: 0,
-            pendingPayoutsCount: 0,
-            pendingReportsCount: 0,
-          };
+          return null;
         }),
         api.getPendingKyc().catch(() => []),
         api.getCallLogs().catch(() => []),
-        api.getUsers().catch(() => []),
+        api.getUsers().catch(err => {
+          console.warn('Users fetch warning:', err);
+          return null;
+        }),
       ]);
 
-      setStats(fetchedStats);
-      setKycList(fetchedKyc);
-      setRecentCalls(fetchedCalls);
-      setUsers(fetchedUsers);
+      if (fetchedStats) setStats(fetchedStats);
+      if (fetchedKyc) setKycList(fetchedKyc);
+      if (fetchedCalls) setRecentCalls(fetchedCalls);
+      if (fetchedUsers) setUsers(fetchedUsers);
+
+      if (!fetchedStats && !fetchedUsers) {
+        setBackendOnline(false);
+        setErrorMessage('Could not connect to Spring Boot backend. Ensure backend is running on port 8080.');
+      } else {
+        setBackendOnline(true);
+      }
     } catch (err: any) {
       console.error('Failed to load live data:', err);
+      setBackendOnline(false);
       setErrorMessage('Could not connect to Spring Boot backend. Ensure backend is running on port 8080.');
     } finally {
       setIsRefreshing(false);
@@ -144,6 +146,7 @@ export const App: React.FC = () => {
           subtitle={currentMeta.subtitle}
           onRefresh={loadAllData}
           isRefreshing={isRefreshing}
+          backendOnline={backendOnline}
         />
 
         {errorMessage && (
@@ -195,6 +198,7 @@ export const App: React.FC = () => {
           {currentTab === 'calls' && (
             <CallManagement
               calls={recentCalls}
+              onRefreshCalls={loadAllData}
             />
           )}
 

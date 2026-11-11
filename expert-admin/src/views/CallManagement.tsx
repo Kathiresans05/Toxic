@@ -1,14 +1,39 @@
-import React, { useState } from 'react';
-import { PhoneCall, Video, Phone, Clock, Search, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PhoneCall, Video, Phone, Clock, Search, ShieldCheck, RefreshCw } from 'lucide-react';
 import { CallLogItem } from '../types';
+import { api } from '../services/api';
 
 interface CallManagementProps {
   calls: CallLogItem[];
+  onRefreshCalls?: () => void;
 }
 
-export const CallManagement: React.FC<CallManagementProps> = ({ calls }) => {
+export const CallManagement: React.FC<CallManagementProps> = ({ calls, onRefreshCalls }) => {
   const [search, setSearch] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [liveCalls, setLiveCalls] = useState<CallLogItem[]>(calls || []);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const fetchCalls = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getCallLogs();
+      setLiveCalls(data);
+      if (onRefreshCalls) onRefreshCalls();
+    } catch (err) {
+      console.warn('Failed to fetch call logs:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (calls && calls.length > 0) {
+      setLiveCalls(calls);
+    } else {
+      fetchCalls();
+    }
+  }, [calls]);
 
   const formatInr = (val: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -18,11 +43,11 @@ export const CallManagement: React.FC<CallManagementProps> = ({ calls }) => {
     }).format(val);
   };
 
-  const filteredCalls = calls.filter((c) => {
+  const filteredCalls = (liveCalls || []).filter((c) => {
     const matchesSearch =
-      c.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      c.expertName.toLowerCase().includes(search.toLowerCase()) ||
-      c.callId.toLowerCase().includes(search.toLowerCase());
+      (c.customerName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.expertName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.callId || '').toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === 'ALL' || c.callType === filterType;
     return matchesSearch && matchesType;
   });
@@ -44,17 +69,28 @@ export const CallManagement: React.FC<CallManagementProps> = ({ calls }) => {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-medium">Channel:</span>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 font-medium">Channel:</span>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="ALL">All Types ({liveCalls.length})</option>
+              <option value="VIDEO">Video Consultations</option>
+              <option value="AUDIO">Voice Consultations</option>
+            </select>
+          </div>
+
+          <button
+            onClick={fetchCalls}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
           >
-            <option value="ALL">All Types ({calls.length})</option>
-            <option value="VIDEO">Video Consultations</option>
-            <option value="AUDIO">Voice Consultations</option>
-          </select>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -65,6 +101,10 @@ export const CallManagement: React.FC<CallManagementProps> = ({ calls }) => {
             <h2 className="text-sm font-bold text-slate-900">Consultation Session Records</h2>
             <p className="text-xs text-slate-500">Live Agora RTC call logs and billing breakdown from PostgreSQL</p>
           </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            {liveCalls.length} Recorded Session{liveCalls.length === 1 ? '' : 's'}
+          </span>
         </div>
 
         {filteredCalls.length === 0 ? (
@@ -76,6 +116,13 @@ export const CallManagement: React.FC<CallManagementProps> = ({ calls }) => {
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               When customers connect with creators via Agora RTC channels, session metrics and financial splits will be recorded here.
             </p>
+            <button
+              onClick={fetchCalls}
+              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reload Call Logs
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">

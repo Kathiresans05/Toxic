@@ -33,7 +33,6 @@ class _BankPayoutScreenState extends State<BankPayoutScreen> with SingleTickerPr
   final TextEditingController _amountController = TextEditingController(text: '500');
   String _selectedMethod = 'Bank'; // 'Bank' or 'UPI'
   bool _isSubmitting = false;
-  bool _isBankSaved = true;
 
   @override
   void initState() {
@@ -54,9 +53,6 @@ class _BankPayoutScreenState extends State<BankPayoutScreen> with SingleTickerPr
   }
 
   void _saveBankDetails() {
-    setState(() {
-      _isBankSaved = true;
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('✅ Bank Account details saved successfully!'),
@@ -69,10 +65,10 @@ class _BankPayoutScreenState extends State<BankPayoutScreen> with SingleTickerPr
   Future<void> _processWithdrawal(double maxBalance) async {
     final double amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
 
-    if (amount < 500) {
+    if (amount < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ Minimum withdrawal amount is ₹500'),
+          content: Text('⚠️ Minimum withdrawal amount is ₹10'),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -317,7 +313,7 @@ class _BankPayoutScreenState extends State<BankPayoutScreen> with SingleTickerPr
                 const SizedBox(height: 6),
                 Text(formattedBalance, style: const TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
-                const Text('Min Withdrawal: ₹500 | Fee: ₹0', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text('Min Withdrawal: ₹10 | Fee: ₹0', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
               ],
             ),
           ),

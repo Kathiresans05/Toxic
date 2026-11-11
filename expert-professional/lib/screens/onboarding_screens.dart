@@ -218,62 +218,13 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => OtpVerificationScreen(phone: _phoneController.text)),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: const Text('Get OTP', style: TextStyle(color: Colors.white, fontSize: 16)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// OTP Screen
-class OtpVerificationScreen extends StatelessWidget {
-  final String phone;
-  const OtpVerificationScreen({super.key, required this.phone});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Verify Code', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text('Sent to $phone', style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 40),
-            const TextField(
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: '••••••',
-                hintStyle: TextStyle(letterSpacing: 10),
-              ),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const ExpertRegistrationScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: const Text('Verify & Proceed', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text('Proceed', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
           ],

@@ -40,3 +40,7 @@ local.properties
 
 # Logs
 *.log
+
+# Screenshots & Local Agent Temp
+*.png
+.agents/

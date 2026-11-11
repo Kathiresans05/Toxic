@@ -101,10 +101,34 @@ public class AdminService {
                 adminEmail, ip);
     }
 
+    @Transactional
+    public void toggleUserVerification(UUID userId, boolean verified, String adminEmail, String ip) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        user.setVerified(verified);
+        userRepository.save(user);
+
+        logAudit("USER_VERIFICATION_UPDATE",
+                "User " + (user.getEmail() != null ? user.getEmail() : user.getPhoneNumber()) + " (" + user.getFullName() + ") verification set to: " + verified,
+                adminEmail, ip);
+    }
+
     // 2. Creators
     @Transactional(readOnly = true)
     public Page<ExpertProfile> getCreators(int page, int size) {
         return expertProfileRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ExpertProfile> getCreators(int page, int size, String tier) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        if (tier != null && !tier.trim().isEmpty() && !tier.equalsIgnoreCase("ALL")) {
+            try {
+                CreatorTier creatorTier = CreatorTier.valueOf(tier.trim().toUpperCase());
+                return expertProfileRepository.findByTier(creatorTier, pageRequest);
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return expertProfileRepository.findAll(pageRequest);
     }
 
     @Transactional
@@ -132,6 +156,64 @@ public class AdminService {
                 adminEmail, ip);
     }
 
+    public BigDecimal getTierRate(CreatorTier tier, String type) {
+        String key = (tier == CreatorTier.ELITE)
+                ? ("tier_elite_" + type + "_rate")
+                : ("tier_standard_" + type + "_rate");
+
+        String defaultVal = (tier == CreatorTier.ELITE)
+                ? (type.equals("audio") ? "25" : "50")
+                : (type.equals("audio") ? "7" : "20");
+
+        return platformSettingRepository.findByKey(key)
+                .map(s -> new BigDecimal(s.getValue()))
+                .orElse(new BigDecimal(defaultVal));
+    }
+
+    @Transactional
+    public void updateCreatorTier(UUID expertId, CreatorTier tier, String adminEmail, String ip) {
+        ExpertProfile expert = expertProfileRepository.findById(expertId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator not found: " + expertId));
+
+        expert.setTier(tier);
+
+        // Fetch corresponding tier rates
+        BigDecimal audioRate = getTierRate(tier, "audio");
+        BigDecimal videoRate = getTierRate(tier, "video");
+
+        expert.setAudioRatePerMin(audioRate);
+        expert.setVideoRatePerMin(videoRate);
+        expertProfileRepository.save(expert);
+
+        logAudit("CREATOR_TIER_UPDATE",
+                "Creator " + (expert.getUser() != null ? expert.getUser().getFullName() : expertId) +
+                        " tier set to: " + tier + " (Audio: ₹" + audioRate + "/min, Video: ₹" + videoRate + "/min)",
+                adminEmail, ip);
+    }
+
+    @Transactional
+    public void updateTierRates(CreatorTier tier, BigDecimal audioRate, BigDecimal videoRate, boolean applyToExisting, String adminEmail, String ip) {
+        String audioKey = (tier == CreatorTier.ELITE) ? "tier_elite_audio_rate" : "tier_standard_audio_rate";
+        String videoKey = (tier == CreatorTier.ELITE) ? "tier_elite_video_rate" : "tier_standard_video_rate";
+
+        updatePlatformSetting(audioKey, audioRate.toPlainString(), adminEmail, ip);
+        updatePlatformSetting(videoKey, videoRate.toPlainString(), adminEmail, ip);
+
+        if (applyToExisting) {
+            List<ExpertProfile> tierExperts = expertProfileRepository.findAll().stream()
+                    .filter(e -> e.getTier() == tier)
+                    .toList();
+            for (ExpertProfile expert : tierExperts) {
+                expert.setAudioRatePerMin(audioRate);
+                expert.setVideoRatePerMin(videoRate);
+            }
+            expertProfileRepository.saveAll(tierExperts);
+            logAudit("TIER_RATES_BULK_APPLIED",
+                    "Bulk updated " + tierExperts.size() + " " + tier + " creators to Audio: ₹" + audioRate + ", Video: ₹" + videoRate,
+                    adminEmail, ip);
+        }
+    }
+
     // 3. KYC Verification
     @Transactional(readOnly = true)
     public Page<KycVerification> getPendingKycVerifications(int page, int size) {
@@ -155,6 +237,10 @@ public class AdminService {
         expert.setKycStatus(kyc.getStatus());
         if (approved) {
             expert.setApproved(true);
+            if (expert.getUser() != null) {
+                expert.getUser().setVerified(true);
+                userRepository.save(expert.getUser());
+            }
         }
         expertProfileRepository.save(expert);
 

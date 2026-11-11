@@ -1,39 +1,22 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'package:expert_professional/services/api_service.dart';
 
 class CallService {
   static final CallService _instance = CallService._internal();
   factory CallService() => _instance;
   CallService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  Stream<QuerySnapshot> listenToIncomingCalls(String expertId) {
-    return _firestore
-        .collection('calls')
-        .where('expertId', isEqualTo: expertId)
-        .where('status', isEqualTo: 'ringing')
-        .snapshots();
-  }
-  
-  Stream<DocumentSnapshot> listenToCall(String callId) {
-    return _firestore.collection('calls').doc(callId).snapshots();
-  }
+  final ApiService _apiService = ApiService();
 
   Future<void> acceptCall(String callId) async {
-    await _firestore.collection('calls').doc(callId).update({
-      'status': 'accepted',
-    });
+    await _apiService.acceptCall(callId);
   }
 
   Future<void> rejectCall(String callId) async {
-    await _firestore.collection('calls').doc(callId).update({
-      'status': 'rejected',
-    });
+    await _apiService.rejectCall(callId);
   }
 
   Future<void> endCall(String callId) async {
-    await _firestore.collection('calls').doc(callId).update({
-      'status': 'ended',
-    });
+    await _apiService.endCall(callId);
   }
 }

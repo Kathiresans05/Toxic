@@ -18,7 +18,6 @@ class AppTheme {
         primary: primary,
         secondary: secondary,
         surface: cardColor,
-        background: background,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

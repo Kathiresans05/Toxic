@@ -69,13 +69,26 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "User status updated to " + (active ? "ACTIVE" : "SUSPENDED")));
     }
 
+    @PutMapping("/users/{userId}/toggle-verification")
+    @Operation(summary = "Grant or revoke verified badge for creator or user")
+    public ResponseEntity<Map<String, String>> toggleUserVerification(
+            @AuthenticationPrincipal UserPrincipal adminUser,
+            @PathVariable UUID userId,
+            @RequestBody Map<String, Boolean> body,
+            HttpServletRequest request) {
+        boolean verified = Boolean.TRUE.equals(body.get("verified"));
+        adminService.toggleUserVerification(userId, verified, adminUser != null ? adminUser.getEmail() : "admin@expertapp.com", getClientIp(request));
+        return ResponseEntity.ok(Map.of("message", "User verification updated to " + verified));
+    }
+
     // 3. Creator Management
     @GetMapping("/creators")
     @Operation(summary = "List creator profiles with rates and ratings")
     public ResponseEntity<Page<ExpertProfile>> getCreators(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(adminService.getCreators(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String tier) {
+        return ResponseEntity.ok(adminService.getCreators(page, size, tier));
     }
 
     @PutMapping("/creators/{expertId}/approval")
@@ -88,6 +101,35 @@ public class AdminController {
         boolean approved = Boolean.TRUE.equals(body.get("approved"));
         adminService.toggleCreatorApproval(expertId, approved, adminUser.getEmail(), getClientIp(request));
         return ResponseEntity.ok(Map.of("message", "Creator approval set to " + approved));
+    }
+
+    @PutMapping("/creators/{expertId}/tier")
+    @Operation(summary = "Assign creator to Standard Pro or Elite Expert tier")
+    public ResponseEntity<Map<String, String>> updateCreatorTier(
+            @AuthenticationPrincipal UserPrincipal adminUser,
+            @PathVariable UUID expertId,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request) {
+        String tierStr = body.getOrDefault("tier", "STANDARD");
+        CreatorTier tier = CreatorTier.valueOf(tierStr.toUpperCase());
+        adminService.updateCreatorTier(expertId, tier, adminUser.getEmail(), getClientIp(request));
+        return ResponseEntity.ok(Map.of("message", "Creator tier updated to " + tier));
+    }
+
+    @PutMapping("/pricing/tier-rates")
+    @Operation(summary = "Configure universal tariff for Standard Pro or Elite Expert tier")
+    public ResponseEntity<Map<String, Object>> updateTierRates(
+            @AuthenticationPrincipal UserPrincipal adminUser,
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request) {
+        String tierStr = body.getOrDefault("tier", "STANDARD").toString();
+        CreatorTier tier = CreatorTier.valueOf(tierStr.toUpperCase());
+        BigDecimal audioRate = new BigDecimal(body.get("audioRate").toString());
+        BigDecimal videoRate = new BigDecimal(body.get("videoRate").toString());
+        boolean applyToExisting = Boolean.parseBoolean(String.valueOf(body.getOrDefault("applyToExisting", "true")));
+
+        adminService.updateTierRates(tier, audioRate, videoRate, applyToExisting, adminUser.getEmail(), getClientIp(request));
+        return ResponseEntity.ok(Map.of("message", tier + " tier rates updated successfully", "tier", tier.name()));
     }
 
     @PutMapping("/creators/{expertId}/rates")

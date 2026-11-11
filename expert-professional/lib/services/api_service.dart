@@ -2,14 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:expert_professional/constants.dart';
 
 class ApiService {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: AppConstants.baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: AppConstants.baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -17,38 +17,16 @@ class ApiService {
 
   Dio get client => _dio;
 
-  Future<bool> sendOtp(String mobileNumber) async {
+  Future<Map<String, dynamic>?> loginWithEmail(
+    String email,
+    String password,
+  ) async {
     try {
-      final response = await _dio.post('/auth/send-otp', data: {
-        'mobileNumber': mobileNumber,
-      });
-      return response.data['success'] ?? false;
-    } catch (e) {
-      print('Send OTP Error: $e');
-      return false;
-    }
-  }
-
-  Future<Map<String, dynamic>?> verifyOtp(String mobileNumber, String otp) async {
-    try {
-      final response = await _dio.post('/auth/verify-otp', data: {
-        'mobileNumber': mobileNumber,
-        'otp': otp,
-      });
-      return response.data; 
-    } catch (e) {
-      print('Verify OTP Error: $e');
-      return null;
-    }
-  }
-
-  Future<Map<String, dynamic>?> loginWithEmail(String email, String password) async {
-    try {
-      final response = await _dio.post('/auth/login-email', data: {
-        'email': email,
-        'password': password,
-      });
-      return response.data; 
+      final response = await _dio.post(
+        '/auth/login-email',
+        data: {'email': email, 'password': password},
+      );
+      return response.data;
     } catch (e) {
       print('Login Email Error: $e');
       return null;
@@ -75,12 +53,18 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> recordCompletedCall({int durationSeconds = 225, double amountCharged = 25.0}) async {
+  Future<Map<String, dynamic>?> recordCompletedCall({
+    int durationSeconds = 225,
+    double amountCharged = 25.0,
+  }) async {
     try {
-      final response = await _dio.post('/calls/record', data: {
-        'durationSeconds': durationSeconds,
-        'amountCharged': amountCharged,
-      });
+      final response = await _dio.post(
+        '/calls/record',
+        data: {
+          'durationSeconds': durationSeconds,
+          'amountCharged': amountCharged,
+        },
+      );
       return response.data;
     } catch (e) {
       print('Record Call Error: $e');
@@ -110,13 +94,16 @@ class ApiService {
 
   Future<Map<String, dynamic>?> getExpertEarnings(String filter) async {
     try {
-      final response = await _dio.get('/experts/earnings', queryParameters: {
-        'filter': filter.toLowerCase().contains('week')
-            ? 'week'
-            : filter.toLowerCase().contains('month')
-                ? 'month'
-                : 'today',
-      });
+      final response = await _dio.get(
+        '/experts/earnings',
+        queryParameters: {
+          'filter': filter.toLowerCase().contains('week')
+              ? 'week'
+              : filter.toLowerCase().contains('month')
+              ? 'month'
+              : 'today',
+        },
+      );
       return response.data;
     } catch (e) {
       print('Get Expert Earnings Error: $e');
@@ -126,9 +113,10 @@ class ApiService {
 
   Future<Map<String, dynamic>?> toggleExpertStatus(bool isOnline) async {
     try {
-      final response = await _dio.put('/experts/status', data: {
-        'isOnline': isOnline,
-      });
+      final response = await _dio.put(
+        '/experts/status',
+        data: {'isOnline': isOnline},
+      );
       return response.data;
     } catch (e) {
       print('Toggle Expert Status Error: $e');
@@ -140,19 +128,26 @@ class ApiService {
     String? bio,
     int? experienceYears,
     List<String>? languages,
+    double? audioRate,
+    double? videoRate,
     String? aadhaarNumber,
     String? panNumber,
     String? voiceSampleUrl,
   }) async {
     try {
-      final response = await _dio.put('/experts/profile', data: {
-        'bio': ?bio,
-        'experienceYears': ?experienceYears,
-        'languages': ?languages,
-        'aadhaarNumber': ?aadhaarNumber,
-        'panNumber': ?panNumber,
-        'voiceSampleUrl': ?voiceSampleUrl,
-      });
+      final response = await _dio.put(
+        '/experts/profile',
+        data: {
+          'bio': ?bio,
+          'experienceYears': ?experienceYears,
+          'languages': ?languages,
+          'audioRate': ?audioRate,
+          'videoRate': ?videoRate,
+          'aadhaarNumber': ?aadhaarNumber,
+          'panNumber': ?panNumber,
+          'voiceSampleUrl': ?voiceSampleUrl,
+        },
+      );
       return response.data;
     } catch (e) {
       print('Update Expert Profile Error: $e');
@@ -160,18 +155,24 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> requestPayoutWithdrawal(double amount, Map<String, dynamic> methodDetails) async {
+  Future<Map<String, dynamic>?> requestPayoutWithdrawal(
+    double amount,
+    Map<String, dynamic> methodDetails,
+  ) async {
     try {
       final String method = methodDetails['method'] ?? 'UPI';
       final String accountDetails = method == 'UPI'
           ? (methodDetails['upiId'] ?? 'UPI ID')
           : 'A/C: ${methodDetails['accountNumber'] ?? ''}, Bank: ${methodDetails['bankName'] ?? ''}';
 
-      final response = await _dio.post('/users/payout-request', data: {
-        'amount': amount,
-        'payoutMethod': method,
-        'accountDetails': accountDetails,
-      });
+      final response = await _dio.post(
+        '/users/payout-request',
+        data: {
+          'amount': amount,
+          'payoutMethod': method,
+          'accountDetails': accountDetails,
+        },
+      );
       return response.data;
     } catch (e) {
       print('Request Payout Error: $e');
@@ -192,16 +193,69 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> getAgoraToken(String channelName, String uid) async {
+  Future<Map<String, dynamic>?> getAgoraToken(
+    String channelName,
+    String uid,
+  ) async {
     try {
-      final response = await _dio.get('/calls/token', queryParameters: {
-        'channelName': channelName,
-        'uid': uid,
-      });
+      final response = await _dio.get(
+        '/calls/token',
+        queryParameters: {'channelName': channelName, 'uid': uid},
+      );
       return response.data;
     } catch (e) {
       print('Get Agora Token Error: $e');
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> acceptCall(String callId) async {
+    try {
+      final response = await _dio.post('/calls/$callId/accept');
+      return response.data != null ? Map<String, dynamic>.from(response.data) : null;
+    } catch (e) {
+      print('Accept Call Error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> rejectCall(String callId) async {
+    try {
+      final response = await _dio.post('/calls/$callId/reject');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Reject Call Error: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> endCall(String callId) async {
+    try {
+      final response = await _dio.post('/calls/$callId/end');
+      return response.data != null ? Map<String, dynamic>.from(response.data) : null;
+    } catch (e) {
+      print('End Call Error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> reportCall({
+    required String callId,
+    required String reason,
+    String details = '',
+    String targetType = 'CUSTOMER',
+  }) async {
+    try {
+      final response = await _dio.post('/calls/$callId/report', data: {
+        'reason': reason,
+        'details': details,
+        'targetType': targetType,
+      });
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('Report Call Error: $e');
+      return false;
+    }
+  }
 }
+

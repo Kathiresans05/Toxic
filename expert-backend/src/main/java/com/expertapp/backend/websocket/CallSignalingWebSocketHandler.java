@@ -23,6 +23,18 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        java.net.URI uri = session.getUri();
+        if (uri != null && uri.getQuery() != null) {
+            for (String param : uri.getQuery().split("&")) {
+                String[] pair = param.split("=");
+                if (pair.length == 2 && "userId".equalsIgnoreCase(pair[0])) {
+                    String userId = pair[1];
+                    userSessions.put(userId, session);
+                    session.getAttributes().put("userId", userId);
+                    log.info("User {} registered via WebSocket URI ({})", userId, session.getId());
+                }
+            }
+        }
         log.info("WebSocket connected: {}", session.getId());
     }
 
@@ -31,6 +43,11 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
         try {
             Map<String, Object> payload = objectMapper.readValue(message.getPayload(), Map.class);
             String event = (String) payload.get("event");
+
+            if ("PING".equalsIgnoreCase(event)) {
+                session.sendMessage(new TextMessage("{\"event\":\"PONG\"}"));
+                return;
+            }
 
             if ("REGISTER".equalsIgnoreCase(event)) {
                 String userId = (String) payload.get("userId");
