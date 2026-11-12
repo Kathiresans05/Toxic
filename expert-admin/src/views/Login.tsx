@@ -11,19 +11,29 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState<string>('Admin@123');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadingSeconds, setLoadingSeconds] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+    setLoadingSeconds(0);
+
+    // Show elapsed time while waiting for cold-start
+    const timer = setInterval(() => {
+      setLoadingSeconds(prev => prev + 1);
+    }, 1000);
 
     try {
       await api.login(email.trim(), password);
+      clearInterval(timer);
       onLoginSuccess();
     } catch (err: any) {
+      clearInterval(timer);
       setErrorMessage(err.message || 'Authentication failed. Please verify credentials.');
     } finally {
       setIsLoading(false);
+      setLoadingSeconds(0);
     }
   };
 
@@ -55,6 +65,12 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
               <span className="font-semibold">Error:</span>
               <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {isLoading && loadingSeconds > 8 && (
+            <div className="mb-5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+              ⏳ Backend is waking up from sleep mode (free tier). Please wait up to 60 seconds…
             </div>
           )}
 
@@ -106,7 +122,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying Credentials...</span>
+                    <span>{loadingSeconds > 5 ? `Waking up server... ${loadingSeconds}s` : 'Verifying Credentials...'}</span>
                   </>
                 ) : (
                   <>

@@ -146,18 +146,24 @@ class AuthProvider extends ChangeNotifier {
         return null; // null means success
       }
     } on DioException catch (e) {
-      debugPrint('Spring Boot SignUp Dio error: ${e.response?.data}');
+      debugPrint('Spring Boot SignUp Dio error: ${e.type} ${e.response?.data}');
       _isLoading = false;
       notifyListeners();
       if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        return 'Cannot connect to server. Please check your internet or network connection.';
+        return 'Server is waking up. Please wait 30-60 seconds and try again.';
       }
       final data = e.response?.data;
-      final errorMsg = data['message'] != null ? data['message'].toString() : '';
+      final errorMsg = (data != null && data is Map && data['message'] != null)
+          ? data['message'].toString()
+          : '';
       if (e.response?.statusCode == 400 ||
+          e.response?.statusCode == 409 ||
           errorMsg.toLowerCase().contains('already') ||
-          errorMsg.toLowerCase().contains('in use')) {
+          errorMsg.toLowerCase().contains('in use') ||
+          errorMsg.toLowerCase().contains('exists')) {
         // Existing user: seamlessly log them in with the provided credentials
         final loginSuccess = await login(cleanEmail, password);
         if (loginSuccess) {

@@ -44,22 +44,35 @@ class ApiService {
   }
 
   async login(email: string, password: string): Promise<{ accessToken: string; user?: any }> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for cold start
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Invalid admin credentials' }));
-      throw new Error(err.message || 'Authentication failed');
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-    const data = await response.json();
-    if (data.accessToken) {
-      this.setToken(data.accessToken);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Invalid admin credentials' }));
+        throw new Error(err.message || 'Authentication failed');
+      }
+
+      const data = await response.json();
+      if (data.accessToken) {
+        this.setToken(data.accessToken);
+      }
+      return data;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('Server is taking too long to respond. The backend may be waking up — please wait 60 seconds and try again.');
+      }
+      throw err;
     }
-    return data;
   }
 
   logout() {
