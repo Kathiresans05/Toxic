@@ -345,5 +345,16 @@ public class CallService {
         );
         safetyReportRepository.save(report);
     }
+
+    @Transactional(readOnly = true)
+    public List<CallSessionResponse> getCustomerCallHistory(UUID customerId) {
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(0, 50, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+        return callSessionRepository.findByCustomerId(customerId, pageable)
+                .getContent()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 }
 

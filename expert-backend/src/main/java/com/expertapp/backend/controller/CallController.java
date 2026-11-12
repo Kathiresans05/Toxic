@@ -67,5 +67,15 @@ public class CallController {
         callService.reportCall(userPrincipal != null ? userPrincipal.getId() : null, callId, reason, details, targetType);
         return ResponseEntity.ok(Map.of("message", "Report submitted successfully for safety review"));
     }
+
+    @GetMapping("/history")
+    @Operation(summary = "Get current customer call history logs")
+    public ResponseEntity<java.util.List<CallSessionResponse>> getCallHistory(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            return ResponseEntity.ok(java.util.List.of());
+        }
+        return ResponseEntity.ok(callService.getCustomerCallHistory(userPrincipal.getId()));
+    }
 }
 
