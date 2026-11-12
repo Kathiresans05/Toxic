@@ -406,49 +406,6 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
             ),
           ),
 
-          // Sleek Single Horizontal Pill Filter Strip
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-            child: Row(
-              children: [
-                ..._filters.map((f) {
-                  final isSelected = f == _selectedFilter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildFilterPill(
-                      label: f,
-                      isSelected: isSelected,
-                      isLight: isLight,
-                      onTap: () {
-                        setState(() {
-                          _selectedFilter = f;
-                        });
-                      },
-                    ),
-                  );
-                }),
-                const SizedBox(width: 4),
-                ..._languageFilters.where((l) => l != 'All Languages').map((lang) {
-                  final isSelected = lang == _selectedLanguage;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildFilterPill(
-                      label: lang,
-                      isSelected: isSelected,
-                      isLight: isLight,
-                      onTap: () {
-                        setState(() {
-                          _selectedLanguage = isSelected ? 'All Languages' : lang;
-                        });
-                      },
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
           const SizedBox(height: 8),
           Expanded(
             child: _isLoading

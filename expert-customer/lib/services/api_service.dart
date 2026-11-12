@@ -40,6 +40,19 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getCallHistory() async {
+    try {
+      final response = await _dio.get('/calls/history');
+      if (response.data is List) {
+        return response.data as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('Get Call History Error: $e');
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>?> rechargeWallet(double amount) async {
     try {
       final response = await _dio.put('/users/recharge', data: {

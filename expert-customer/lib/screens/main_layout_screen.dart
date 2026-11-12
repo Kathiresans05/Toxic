@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:expert_customer/theme/app_theme.dart';
 import 'package:expert_customer/screens/home_screen.dart';
 import 'package:expert_customer/screens/dashboard_screens.dart'; // For SearchExpertsScreen
-import 'package:expert_customer/screens/wallet_screens.dart';
+import 'package:expert_customer/screens/activity_screen.dart'; // For Call History & Favorites
 import 'package:expert_customer/screens/user_profile_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
@@ -22,8 +22,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.initState();
     _pages = [
       const HomeScreen(),
-      const SearchExpertsScreen(), // Explore
-      const WalletHomeScreen(),
+      const SearchExpertsScreen(), // Call / Explore
+      const ActivityScreen(), // Call History & Favorites
       const UserProfileScreen(),
     ];
   }
@@ -69,21 +69,23 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               children: [
                 _buildTabItem(
                   context: context,
-                  icon: Icons.home_rounded,
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home_rounded,
                   label: 'Home',
                   index: 0,
                 ),
                 _buildTabItem(
                   context: context,
-                  icon: Icons.search_rounded,
-                  label: 'Explore',
+                  icon: Icons.call_outlined,
+                  selectedIcon: Icons.call_rounded,
+                  label: 'Call',
                   index: 1,
                 ),
                 _buildTabItem(
                   context: context,
-                  icon: Icons.account_balance_wallet_outlined,
-                  selectedIcon: Icons.account_balance_wallet_rounded,
-                  label: 'Wallet',
+                  icon: Icons.history_rounded,
+                  selectedIcon: Icons.history_rounded,
+                  label: 'Activity',
                   index: 2,
                 ),
                 _buildTabItem(

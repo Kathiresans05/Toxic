@@ -115,7 +115,18 @@ class UserProfileScreen extends StatelessWidget {
                           ),
                         ),
                         IconButton(
+                          icon: Icon(
+                            isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                            color: Colors.black,
+                          ),
+                          tooltip: 'Switch Theme',
+                          onPressed: () {
+                            themeProvider.toggleTheme();
+                          },
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.black),
+                          tooltip: 'Refresh Profile',
                           onPressed: () {
                             authProvider.refreshProfile();
                             ScaffoldMessenger.of(context).showSnackBar(

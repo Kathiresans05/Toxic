@@ -101,12 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, name, isVip),
+                _buildHeader(context, name, isVip, balance),
                 const SizedBox(height: 18),
-                _buildWalletHeroCard(balance),
-                const SizedBox(height: 14),
-                _buildLiveActivityTicker(context),
-                const SizedBox(height: 20),
                 _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
                   Navigator.push(
                     context,
@@ -115,15 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 }),
                 const SizedBox(height: 12),
                 _buildFeaturedExpertsHorizontal(context, sortedOnlineExperts),
-                const SizedBox(height: 22),
-                _buildSectionHeader(context, 'Consultation Categories 💡', onSeeAll: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                  );
-                }),
-                const SizedBox(height: 12),
-                _buildCategoriesRow(context),
                 const SizedBox(height: 24),
                 _buildSectionHeader(context, 'Available Online Experts 🟢', onSeeAll: () {
                   Navigator.push(
@@ -142,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, bool isVip) {
+  Widget _buildHeader(BuildContext context, String name, bool isVip, double balance) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final textColor = Theme.of(context).colorScheme.onSurface;
@@ -202,26 +189,58 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        Row(
-          children: [
-            // Theme Toggle Button
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: isDark ? Colors.white12 : AppTheme.lightCardBorder),
-              ),
-              child: IconButton(
-                onPressed: () => themeProvider.toggleTheme(),
-                icon: Icon(
-                  isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                  color: isDark ? const Color(0xFFFFD54F) : const Color(0xFF6366F1),
-                  size: 19,
-                ),
-                tooltip: 'Switch Theme',
-              ),
+        // Compact Wallet Badge with Balance & '+' Add Amount Button
+        InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const RechargeScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: isDark ? Colors.white12 : AppTheme.lightCardBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                )
+              ],
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 18,
+                  color: Color(0xFFF59E0B),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '₹${balance.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, size: 14, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -541,51 +560,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildCategoriesRow(BuildContext context) {
-    final categories = [
-      {'name': 'Breakup & Heartbreak', 'icon': Icons.heart_broken_outlined},
-      {'name': 'Vent Out & Confessions', 'icon': Icons.chat_bubble_outline_rounded},
-      {'name': 'Friendly Listener', 'icon': Icons.headset_mic_outlined},
-      {'name': 'Love & Relationship', 'icon': Icons.favorite_border_rounded},
-      {'name': 'Late Night Talks', 'icon': Icons.nightlight_round},
-      {'name': 'Loneliness & Stress', 'icon': Icons.spa_outlined},
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: categories.map((c) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 10.0),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
-                ),
-                child: Row(
-                  children: [
-                    Icon(c['icon'] as IconData, color: AppTheme.primary, size: 17),
-                    const SizedBox(width: 8),
-                    Text(c['name'] as String, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
