@@ -191,39 +191,44 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
       return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
     }
 
-    // If database has live calls, display them
-    final list = _liveCallHistory.isNotEmpty
-        ? _liveCallHistory
-        : [
-            // Sample placeholder if no calls made yet
-            {
-              'expertName': 'Priya Sharma',
-              'headline': 'Relationship Advisor',
-              'callType': 'AUDIO',
-              'createdAt': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
-              'durationSeconds': 720,
-              'totalAmount': 120.0,
-              'status': 'COMPLETED',
-            },
-            {
-              'expertName': 'Dr. Karthik R',
-              'headline': 'Life & Career Coach',
-              'callType': 'VIDEO',
-              'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-              'durationSeconds': 1080,
-              'totalAmount': 270.0,
-              'status': 'COMPLETED',
-            },
-            {
-              'expertName': 'Ananya Verma',
-              'headline': 'Friendly Listener',
-              'callType': 'AUDIO',
-              'createdAt': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
-              'durationSeconds': 1500,
-              'totalAmount': 200.0,
-              'status': 'COMPLETED',
-            },
-          ];
+    if (_liveCallHistory.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.phone_missed_rounded, size: 64, color: isDark ? Colors.white24 : Colors.black26),
+              const SizedBox(height: 16),
+              Text('No Call History Yet', style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(
+                'Your completed consultation calls with experts will be recorded here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                  );
+                },
+                icon: const Icon(Icons.call_rounded, size: 16, color: Colors.black),
+                label: const Text('Browse Online Experts', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final list = _liveCallHistory;
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -347,47 +352,37 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
       return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
     }
 
-    // Filter live experts that user marked as favorite, or show available experts with toggle
+    if (_onlineExperts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.favorite_border_rounded, size: 64, color: isDark ? Colors.white24 : Colors.black26),
+              const SizedBox(height: 16),
+              Text('No Experts Currently Online', style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(
+                'When registered experts come online, they will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     List<dynamic> favorites = [];
-    if (_onlineExperts.isNotEmpty) {
-      if (_favoriteIds.isNotEmpty) {
-        favorites = _onlineExperts.where((e) {
-          final id = (e['id'] ?? e['user']?['id'] ?? '').toString();
-          return _favoriteIds.contains(id);
-        }).toList();
-      }
-      // If none marked yet, show all online experts as suggestion
-      if (favorites.isEmpty) {
-        favorites = _onlineExperts;
-      }
-    } else {
-      // Default initial favorites list
-      favorites = [
-        {
-          'id': 'exp_1',
-          'name': 'Priya Sharma',
-          'headline': 'Breakup & Emotional Healing Expert',
-          'ratingAverage': 4.9,
-          'audioRatePerMin': 10,
-          'available': true,
-        },
-        {
-          'id': 'exp_2',
-          'name': 'Dr. Karthik R',
-          'headline': 'Career Clarity & Stress Relief Coach',
-          'ratingAverage': 4.8,
-          'audioRatePerMin': 15,
-          'available': true,
-        },
-        {
-          'id': 'exp_3',
-          'name': 'Ananya Verma',
-          'headline': 'Late Night Friendly Listener',
-          'ratingAverage': 5.0,
-          'audioRatePerMin': 8,
-          'available': false,
-        },
-      ];
+    if (_favoriteIds.isNotEmpty) {
+      favorites = _onlineExperts.where((e) {
+        final id = (e['id'] ?? e['user']?['id'] ?? '').toString();
+        return _favoriteIds.contains(id);
+      }).toList();
+    }
+    if (favorites.isEmpty) {
+      favorites = _onlineExperts;
     }
 
     return ListView.builder(
