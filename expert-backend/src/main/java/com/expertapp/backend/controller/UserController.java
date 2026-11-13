@@ -115,11 +115,6 @@ public class UserController {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
 
-        // Production Security Guard: Direct unverified recharge is restricted to DEV / Sandbox testing
-        if ("prod".equalsIgnoreCase(activeProfile)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Direct wallet recharge disabled in production. Complete payment via Razorpay verification."));
-        }
-
         UUID userId = null;
         if (auth.getPrincipal() instanceof UserPrincipal up) {
             userId = up.getId();

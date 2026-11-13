@@ -97,7 +97,9 @@ public class CallService {
         wsAlert.put("callId", callId);
         wsAlert.put("channelName", channelName);
         wsAlert.put("callerName", customer.getFullName());
+        wsAlert.put("callerId", customer.getId().toString());
         wsAlert.put("callType", request.getCallType().name());
+        wsAlert.put("pricePerMinute", rate);
         webSocketHandler.sendToUser(expert.getUser().getId().toString(), wsAlert);
 
         // Notify Creator via Push Notification
