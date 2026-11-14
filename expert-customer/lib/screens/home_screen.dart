@@ -55,13 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning 👋';
-    if (hour < 17) return 'Good Afternoon 👋';
-    return 'Good Evening 👋';
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -134,10 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(BuildContext context, String name, bool isVip, double balance) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
-    final textColor = Theme.of(context).colorScheme.onSurface;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF131823) : Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -153,296 +145,255 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
+          // Top Row: Brand & Greeting on Left + Luxury Wallet on Right
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Stack(
+              // Left: Commercial App Brand Identity
+              Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899), Color(0xFFF59E0B)],
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: CircleAvatar(
-                      radius: 23,
-                      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                        style: const TextStyle(
-                          color: Color(0xFF6366F1),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 20,
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.bolt_rounded,
+                        color: Colors.white,
+                        size: 24,
                       ),
                     ),
                   ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? const Color(0xFF131823) : Colors.white,
-                          width: 2.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (isVip)
-                    const Positioned(
-                      right: -2,
-                      top: -4,
-                      child: Text('👑', style: TextStyle(fontSize: 14)),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        _getGreeting(),
-                        style: TextStyle(
-                          color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      if (isVip) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              )
-                            ],
-                          ),
-                          child: const Text(
-                            'VIP',
-                            style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                      ]
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Luxury Wallet Pill
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RechargeScreen()),
-              );
-            },
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                      : [const Color(0xFFFFFBEB), const Color(0xFFFEF3C7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 15,
-                      color: Color(0xFFD97706),
-                    ),
-                  ),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 11),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'BALANCE',
-                        style: TextStyle(
-                          color: isDark ? Colors.grey.shade400 : const Color(0xFF92400E),
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'ConnectaX',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.6,
+                            ),
+                          ),
+                          if (isVip) ...[
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'PRO',
+                                style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      Text(
-                        '₹${balance.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: isDark ? Colors.amber.shade200 : const Color(0xFF78350F),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Hi, ${name.isNotEmpty ? name.split(' ').first : 'User'} 👋',
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                      ),
-                      shape: BoxShape.circle,
+                ],
+              ),
+              // Right: Luxury Wallet Pill
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RechargeScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6.5),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                          : [const Color(0xFFFFFBEB), const Color(0xFFFEF3C7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: const Icon(Icons.add_rounded, size: 13, color: Colors.white),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 14,
+                          color: Color(0xFFD97706),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'WALLET',
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : const Color(0xFF92400E),
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            '₹${balance.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: isDark ? Colors.amber.shade200 : const Color(0xFF78350F),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.all(3.5),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.add_rounded, size: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Row 2: Amazon / Flipkart Style Integrated Search Bar
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF6366F1),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Search experts, skills, categories...',
+                      style: TextStyle(
+                        color: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 13,
+                          color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Filter',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletHeroCard(double balance) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFB800), Color(0xFFFF9100)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFB800).withValues(alpha: 0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.account_balance_wallet_rounded, color: Colors.black87, size: 18),
-                  SizedBox(width: 6),
-                  Text('Wallet Balance', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text('₹ ${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.w900)),
-            ],
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RechargeScreen()),
-              );
-            },
-            icon: const Icon(Icons.add, size: 16, color: Colors.white),
-            label: const Text('Recharge', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLiveActivityTicker(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderColor = isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder;
-    final textColor = Theme.of(context).colorScheme.onSurface;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF10B981),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _onlineExperts.isNotEmpty 
-                  ? '${_onlineExperts.length} Expert${_onlineExperts.length > 1 ? "s" : ""} Online • Connect instantly'
-                  : 'Connect with certified experts • 24/7 Support',
-              style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const Icon(Icons.bolt_rounded, color: Color(0xFFEC4899), size: 18),
         ],
       ),
     );
