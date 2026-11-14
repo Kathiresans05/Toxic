@@ -102,7 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context, name, isVip, balance),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
+                _buildModernHeroBanner(context),
+                const SizedBox(height: 22),
                 _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
                   Navigator.push(
                     context,
@@ -134,115 +136,221 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = themeProvider.isDarkMode;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFEC4899)]),
-                    shape: BoxShape.circle,
-                  ),
-                  child: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF131823) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF64748B).withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFFEC4899), Color(0xFFF59E0B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 23,
+                      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          color: Color(0xFF6366F1),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                if (isVip)
-                  const Positioned(
+                  Positioned(
                     right: 0,
-                    top: 0,
-                    child: Text('👑', style: TextStyle(fontSize: 13)),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_getGreeting(), style: TextStyle(color: isDark ? Colors.grey.shade400 : AppTheme.lightTextSecondary, fontSize: 12)),
-                Row(
-                  children: [
-                    Text(name, style: TextStyle(color: textColor, fontSize: 19, fontWeight: FontWeight.bold)),
-                    if (isVip) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
-                          borderRadius: BorderRadius.circular(8),
+                    bottom: 0,
+                    child: Container(
+                      width: 13,
+                      height: 13,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF131823) : Colors.white,
+                          width: 2.5,
                         ),
-                        child: const Text('VIP', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
-                    ]
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        // Compact Wallet Badge with Balance & '+' Add Amount Button
-        InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RechargeScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(22),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: isDark ? Colors.white12 : AppTheme.lightCardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                )
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 18,
-                  color: Color(0xFFF59E0B),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  '₹${balance.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primary,
-                    shape: BoxShape.circle,
+                  if (isVip)
+                    const Positioned(
+                      right: -2,
+                      top: -4,
+                      child: Text('👑', style: TextStyle(fontSize: 14)),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _getGreeting(),
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.add, size: 14, color: Colors.black),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      if (isVip) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              )
+                            ],
+                          ),
+                          child: const Text(
+                            'VIP',
+                            style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ]
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Luxury Wallet Pill
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RechargeScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                      : [const Color(0xFFFFFBEB), const Color(0xFFFEF3C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 15,
+                      color: Color(0xFFD97706),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'BALANCE',
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade400 : const Color(0xFF92400E),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        '₹${balance.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: isDark ? Colors.amber.shade200 : const Color(0xFF78350F),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add_rounded, size: 13, color: Colors.white),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -340,16 +448,204 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildModernHeroBanner(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E1B4B), const Color(0xFF2E1065), const Color(0xFF172554)]
+              : [const Color(0xFF4F46E5), const Color(0xFF7C3AED), const Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.4 : 0.3),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.security_rounded, color: Color(0xFFFFD54F), size: 12),
+                    SizedBox(width: 5),
+                    Text(
+                      '100% PRIVATE & SECURE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(radius: 2.5, backgroundColor: Color(0xFF10B981)),
+                    SizedBox(width: 4),
+                    Text(
+                      '24/7 LIVE',
+                      style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Instant 1-on-1 Consultation',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Connect with verified relationship, stress & life advisors in seconds.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 12.5,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.call_rounded, size: 14, color: Color(0xFF4F46E5)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Talk to Expert Now',
+                        style: TextStyle(
+                          color: Color(0xFF4F46E5),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFFFD54F)),
+                    SizedBox(width: 3),
+                    Text(
+                      'No Wait Time',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title, {required VoidCallback onSeeAll}) {
     final textColor = Theme.of(context).colorScheme.onSurface;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
         GestureDetector(
           onTap: onSeeAll,
-          child: const Text('View All ➔', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Row(
+              children: [
+                Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11.5,
+                  ),
+                ),
+                SizedBox(width: 3),
+                Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.primary, size: 10),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -362,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_isLoadingExperts) {
       return const SizedBox(
-        height: 170,
+        height: 220,
         child: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
       );
     }
@@ -371,26 +667,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (list.isEmpty) {
       return Container(
-        height: 120,
-        margin: const EdgeInsets.symmetric(horizontal: 16),
+        height: 130,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.people_outline, color: textSubColor, size: 32),
-              const SizedBox(height: 6),
+              Icon(Icons.people_outline_rounded, color: textSubColor, size: 36),
+              const SizedBox(height: 8),
               Text(
-                'No experts available yet',
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13),
+                'No experts currently online',
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13.5),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
-                'New experts will appear here once registered & approved',
+                'Registered creators will appear here when active',
                 style: TextStyle(color: textSubColor, fontSize: 11),
               ),
             ],
@@ -400,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return SizedBox(
-      height: 175,
+      height: 235,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: list.length,
@@ -409,6 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final user = expert['user'] is Map ? expert['user'] : {};
           final name = user['fullName'] ?? user['name'] ?? expert['name'] ?? 'Expert';
           final avatar = user['avatarUrl'] ?? user['profilePhotoUrl'] ?? expert['avatar'] ?? '';
+          final headline = (expert['headline'] ?? 'Creator & Consultant').toString();
           final rating = double.tryParse((expert['ratingAverage'] ?? expert['rating'])?.toString() ?? '5.0') ?? 5.0;
           final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
           final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
@@ -416,95 +713,161 @@ class _HomeScreenState extends State<HomeScreen> {
           final isElite = tier == 'ELITE';
 
           return Container(
-            width: 145,
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.all(12),
+            width: 175,
+            margin: const EdgeInsets.only(right: 14),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
-              boxShadow: isDark ? [] : [
+              color: isDark ? const Color(0xFF131823) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+                width: 1.2,
+              ),
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFF64748B).withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 )
               ],
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Avatar with live pulse badge
                 Stack(
+                  alignment: Alignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(3),
                       decoration: const BoxDecoration(
-                        gradient: LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF10B981)]),
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF10B981)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                        radius: 28,
+                        backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                         backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
                         child: avatar.isEmpty
-                            ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'E', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16))
+                            ? Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                style: const TextStyle(
+                                  color: Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 22,
+                                ),
+                              )
                             : null,
                       ),
                     ),
                     Positioned(
-                      right: 0,
                       bottom: 0,
                       child: Container(
-                        width: 11,
-                        height: 11,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Theme.of(context).cardColor, width: 2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF131823) : Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(radius: 2.5, backgroundColor: Colors.white),
+                            SizedBox(width: 3),
+                            Text(
+                              'ONLINE',
+                              style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
+                // Name & Verified Badge
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
                       child: Text(
                         name,
-                        style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (isElite) ...[
-                      const SizedBox(width: 3),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text('👑', style: TextStyle(fontSize: 8)),
-                      ),
-                    ],
+                    const SizedBox(width: 4),
+                    if (isElite)
+                      const Text('👑', style: TextStyle(fontSize: 11))
+                    else
+                      const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 14),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 13),
-                    Text('$rating', style: TextStyle(color: textSubColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text(' • ₹${rate.toStringAsFixed(0)}/m', style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold)),
-                  ],
+                // Headline
+                Text(
+                  headline,
+                  style: TextStyle(
+                    color: textSubColor,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
+                // Rating & Price row
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$rating',
+                        style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        ' • ',
+                        style: TextStyle(color: textSubColor),
+                      ),
+                      Text(
+                        '₹${rate.toStringAsFixed(0)}/m',
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Call Buttons Row
                 Row(
                   children: [
                     Expanded(
-                      child: GestureDetector(
+                      child: InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
@@ -518,40 +881,65 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           );
                         },
+                        borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
-                            borderRadius: BorderRadius.circular(10),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
                           ),
-                          child: const Icon(Icons.call_rounded, color: Colors.white, size: 14),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.call_rounded, color: Colors.white, size: 13),
+                              SizedBox(width: 4),
+                              Text('Call', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CallScreen(
-                                expertName: name,
-                                expertId: expertId,
-                                pricePerMinute: rate * 1.5,
-                                callType: 'video',
-                              ),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CallScreen(
+                              expertName: name,
+                              expertId: expertId,
+                              pricePerMinute: rate * 1.5,
+                              callType: 'video',
                             ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1),
-                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
                         ),
+                        child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
                       ),
                     ),
                   ],
@@ -571,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_isLoadingExperts) {
       return const SizedBox(
-        height: 100,
+        height: 120,
         child: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
       );
     }
@@ -581,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
         ),
         child: Center(
@@ -590,16 +978,16 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: sortedExperts.length,
-      separatorBuilder: (_, _) => Divider(height: 1, color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
       itemBuilder: (context, index) {
         final expert = sortedExperts[index];
         final user = expert['user'] is Map ? expert['user'] : {};
         final name = user['fullName'] ?? user['name'] ?? expert['name'] ?? 'Expert';
         final avatar = user['avatarUrl'] ?? user['profilePhotoUrl'] ?? expert['avatar'] ?? '';
+        final headline = (expert['headline'] ?? 'Creator & Consultant').toString();
         final rating = double.tryParse((expert['ratingAverage'] ?? expert['rating'])?.toString() ?? '5.0') ?? 5.0;
         final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
         final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
@@ -607,38 +995,75 @@ class _HomeScreenState extends State<HomeScreen> {
         final tier = (expert['tier'] ?? 'STANDARD').toString().toUpperCase();
         final isElite = tier == 'ELITE';
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF131823) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF64748B).withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
           child: Row(
             children: [
-              // Circle Avatar
+              // Circle Avatar with live indicator
               Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                    backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                    child: avatar.isEmpty
-                        ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'E', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16))
-                        : null,
+                  Container(
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF10B981)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                      child: avatar.isEmpty
+                          ? Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                              style: const TextStyle(
+                                color: Color(0xFF6366F1),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
                   Positioned(
                     right: 0,
                     bottom: 0,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 13,
+                      height: 13,
                       decoration: BoxDecoration(
                         color: const Color(0xFF10B981),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF131823) : Colors.white,
+                          width: 2.5,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
-              // Info
+              const SizedBox(width: 14),
+              // Creator Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,50 +1073,79 @@ class _HomeScreenState extends State<HomeScreen> {
                         Flexible(
                           child: Text(
                             name,
-                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(
+                              color: textColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
+                              letterSpacing: -0.2,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 5),
                         if (isElite)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text('👑 ELITE', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
-                          )
+                          const Text('👑', style: TextStyle(fontSize: 12))
                         else
-                          const Icon(Icons.verified, color: AppTheme.primary, size: 14),
+                          const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 15),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
-                      'Relationship • $languages',
-                      style: TextStyle(color: textSubColor, fontSize: 11),
+                      headline,
+                      style: TextStyle(
+                        color: textSubColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 5),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
-                        const SizedBox(width: 2),
-                        Text('$rating', style: TextStyle(color: textSubColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 13),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$rating',
+                                style: const TextStyle(color: Color(0xFFD97706), fontSize: 11, fontWeight: FontWeight.w900),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        Text('₹${rate.toStringAsFixed(0)}/min', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          '₹${rate.toStringAsFixed(0)}/min',
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '• $languages',
+                          style: TextStyle(color: textSubColor, fontSize: 11),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Call Action Buttons
+              const SizedBox(width: 10),
+              // Call action buttons
               Row(
                 children: [
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       Navigator.push(
                         context,
@@ -705,30 +1159,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981), // Emerald Green Audio Call
-                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF10B981), Color(0xFF059669)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           )
                         ],
                       ),
                       child: const Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.call_rounded, color: Colors.white, size: 14),
                           SizedBox(width: 5),
-                          Text('Call', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text(
+                            'Call',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12.5),
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(width: 6),
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       Navigator.push(
                         context,
@@ -742,14 +1203,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
                       ),
-                      child: const Icon(Icons.videocam_rounded, color: Color(0xFF6366F1), size: 16),
+                      child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 16),
                     ),
                   ),
                 ],
