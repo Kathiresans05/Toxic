@@ -23,7 +23,7 @@ class SocketService {
   bool get isConnected => _socket != null && _socket!.readyState == WebSocket.open;
 
   void connect(String userId) async {
-    if (userId.isEmpty) return;
+    if (kIsWeb || userId.isEmpty) return;
     _currentUserId = userId;
 
     if (isConnected) return;
@@ -113,7 +113,7 @@ class SocketService {
     _socket = null;
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
-    if (_currentUserId != null && _currentUserId!.isNotEmpty) {
+    if (!kIsWeb && _currentUserId != null && _currentUserId!.isNotEmpty) {
       _reconnectTimer = Timer(const Duration(seconds: 5), () {
         if (!isConnected && _currentUserId != null) {
           connect(_currentUserId!);

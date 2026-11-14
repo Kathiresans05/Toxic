@@ -9,6 +9,7 @@ import 'package:expert_professional/screens/voice_bio_screen.dart';
 import 'package:expert_professional/screens/bank_payout_screen.dart';
 import 'package:expert_professional/services/notification_service.dart';
 import 'package:expert_professional/services/foreground_service.dart';
+import 'package:expert_professional/screens/incoming_call_screen.dart';
 
 // Reuse visual constants matching the golden/dark luxury theme
 class ExpertColors {
@@ -125,6 +126,21 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
           channelName: channelName,
           pricePerMinute: pricePerMinute,
           callType: callType,
+        );
+
+        // Show full-screen incoming call UI immediately
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => IncomingCallScreen(
+              callId: callId,
+              callerName: callerName,
+              channelName: channelName,
+              callerId: data['callerId']?.toString(),
+              pricePerMinute: pricePerMinute,
+              callType: callType,
+            ),
+          ),
         );
       };
     }
