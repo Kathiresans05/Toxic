@@ -152,14 +152,14 @@ public class ExpertController {
     }
 
     @GetMapping("/online")
-    @Operation(summary = "Get currently online and available experts")
+    @Operation(summary = "Get approved experts (online first)")
     public ResponseEntity<java.util.List<ExpertProfile>> getOnlineExperts(
             @RequestParam(required = false) String preferredLanguage) {
-        return ResponseEntity.ok(expertProfileRepository.findByApprovedTrueAndAvailableTrue(PageRequest.of(0, 50)).getContent());
+        return ResponseEntity.ok(expertProfileRepository.findByApprovedTrue(PageRequest.of(0, 50, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "available"))).getContent());
     }
 
     @GetMapping
-    @Operation(summary = "Browse approved and available experts")
+    @Operation(summary = "Browse approved experts (online first)")
     public ResponseEntity<Page<ExpertProfile>> getExperts(
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(defaultValue = "0") int page,
@@ -167,7 +167,7 @@ public class ExpertController {
         if (categoryId != null) {
             return ResponseEntity.ok(expertProfileRepository.findByCategoryIdAndApprovedTrueAndAvailableTrue(categoryId, PageRequest.of(page, size)));
         }
-        return ResponseEntity.ok(expertProfileRepository.findByApprovedTrueAndAvailableTrue(PageRequest.of(page, size)));
+        return ResponseEntity.ok(expertProfileRepository.findByApprovedTrue(PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "available"))));
     }
 
     @GetMapping("/{id}")

@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface ExpertProfileRepository extends JpaRepository<ExpertProfile, UUID> {
     Optional<ExpertProfile> findByUser(User user);
     Optional<ExpertProfile> findByUserId(UUID userId);
+    Page<ExpertProfile> findByApprovedTrue(Pageable pageable);
     Page<ExpertProfile> findByApprovedTrueAndAvailableTrue(Pageable pageable);
     Page<ExpertProfile> findByCategoryIdAndApprovedTrueAndAvailableTrue(UUID categoryId, Pageable pageable);
     Page<ExpertProfile> findByKycStatus(KycStatus kycStatus, Pageable pageable);
