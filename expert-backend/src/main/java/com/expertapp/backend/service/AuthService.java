@@ -57,6 +57,7 @@ public class AuthService {
             ExpertProfile profile = new ExpertProfile();
             profile.setUser(savedUser);
             profile.setHeadline("Creator & Consultant");
+            profile.setLanguages("Tamil, English");
             profile.setAudioRatePerMin(BigDecimal.valueOf(10.00));
             profile.setVideoRatePerMin(BigDecimal.valueOf(20.00));
             profile.setAgoraUid(Math.abs(savedUser.getId().getMostSignificantBits() % 10000000L));

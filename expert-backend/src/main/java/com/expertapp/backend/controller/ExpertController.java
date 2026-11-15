@@ -107,6 +107,14 @@ public class ExpertController {
         if (body.containsKey("videoRate") && body.get("videoRate") != null) {
             expert.setVideoRatePerMin(new java.math.BigDecimal(body.get("videoRate").toString()));
         }
+        if (body.containsKey("languages") && body.get("languages") != null) {
+            Object langs = body.get("languages");
+            if (langs instanceof java.util.List) {
+                expert.setLanguages(String.join(", ", ((java.util.List<?>) langs).stream().map(Object::toString).toList()));
+            } else {
+                expert.setLanguages(langs.toString());
+            }
+        }
         expertProfileRepository.save(expert);
         return ResponseEntity.ok(expert);
     }

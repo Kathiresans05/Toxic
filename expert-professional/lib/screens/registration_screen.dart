@@ -65,6 +65,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'bio': _bioController.text.trim(),
       });
 
+      // Update Expert Profile with real selected languages & bio
+      await apiService.client.put('/experts/profile', data: {
+        'headline': _bioController.text.trim().isNotEmpty ? _bioController.text.trim() : 'Expert Consultant',
+        'bio': _bioController.text.trim(),
+        'languages': selectedLanguages.join(', '),
+      });
+
       if (userResponse.statusCode == 200 || userResponse.statusCode == 201) {
         await apiService.client.put('/experts/status', data: {
           'isOnline': false,

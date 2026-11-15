@@ -836,9 +836,17 @@ class _HomeScreenState extends State<HomeScreen> {
         (expert['id'] != null && expert['id'].toString().isNotEmpty)
         ? expert['id'].toString()
         : (user['id']?.toString() ?? '');
-    final languages =
-        (expert['languages'] as List<dynamic>?)?.join(', ') ?? 'Tamil, English';
-    final isOnline = expert['available'] == true || expert['isOnline'] == true;
+    final isVerified = user['verified'] == true || expert['isVerified'] == true || expert['verified'] == true;
+    List<String> expertLangs = [];
+    if (expert['languages'] is List) {
+      expertLangs = (expert['languages'] as List).map((l) => l.toString().trim()).where((l) => l.isNotEmpty).toList();
+    } else if (expert['languages'] is String && (expert['languages'] as String).trim().isNotEmpty) {
+      expertLangs = (expert['languages'] as String).split(',').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    } else if (user['preferredLanguage'] != null && user['preferredLanguage'].toString().trim().isNotEmpty) {
+      expertLangs = [user['preferredLanguage'].toString().trim()];
+    }
+    final languages = expertLangs.isNotEmpty ? expertLangs.join(', ') : 'All Languages';
+    final isOnline = (expert['available'] ?? expert['isOnline']) == true;
 
     showModalBottomSheet(
       context: context,
@@ -940,12 +948,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(width: 5),
-                  const Icon(
-                    Icons.verified_rounded,
-                    color: Color(0xFF3B82F6),
-                    size: 18,
-                  ),
+                  if (isVerified) ...[
+                    const SizedBox(width: 5),
+                    const Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF3B82F6),
+                      size: 18,
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),
@@ -1400,12 +1410,19 @@ class _HomeScreenState extends State<HomeScreen> {
             (expert['id'] != null && expert['id'].toString().isNotEmpty)
             ? expert['id'].toString()
             : (user['id']?.toString() ?? '');
-        final languages =
-            (expert['languages'] as List<dynamic>?)?.join(', ') ??
-            'Tamil, English';
+        final isVerified = user['verified'] == true || expert['isVerified'] == true || expert['verified'] == true;
+        List<String> expertLangs = [];
+        if (expert['languages'] is List) {
+          expertLangs = (expert['languages'] as List).map((l) => l.toString().trim()).where((l) => l.isNotEmpty).toList();
+        } else if (expert['languages'] is String && (expert['languages'] as String).trim().isNotEmpty) {
+          expertLangs = (expert['languages'] as String).split(',').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+        } else if (user['preferredLanguage'] != null && user['preferredLanguage'].toString().trim().isNotEmpty) {
+          expertLangs = [user['preferredLanguage'].toString().trim()];
+        }
+        final languages = expertLangs.isNotEmpty ? expertLangs.join(', ') : 'All Languages';
         final tier = (expert['tier'] ?? 'STANDARD').toString().toUpperCase();
         final isElite = tier == 'ELITE';
-        final isOnline = expert['available'] == true || expert['isOnline'] == true;
+        final isOnline = (expert['available'] ?? expert['isOnline']) == true;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -1511,15 +1528,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        if (isElite)
-                          const Text('👑', style: TextStyle(fontSize: 12))
-                        else
+                        if (isElite) ...[
+                          const SizedBox(width: 5),
+                          const Text('👑', style: TextStyle(fontSize: 12)),
+                        ] else if (isVerified) ...[
+                          const SizedBox(width: 5),
                           const Icon(
                             Icons.verified_rounded,
                             color: Color(0xFF3B82F6),
                             size: 15,
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 3),

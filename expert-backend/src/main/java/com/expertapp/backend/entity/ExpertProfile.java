@@ -64,6 +64,9 @@ public class ExpertProfile {
     @Column(name = "wallet_balance", precision = 12, scale = 2)
     private BigDecimal walletBalance = BigDecimal.ZERO;
 
+    @Column(name = "languages", length = 500)
+    private String languages = "Tamil, English";
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -135,6 +138,9 @@ public class ExpertProfile {
 
     public BigDecimal getWalletBalance() { return walletBalance; }
     public void setWalletBalance(BigDecimal walletBalance) { this.walletBalance = walletBalance; }
+
+    public String getLanguages() { return languages; }
+    public void setLanguages(String languages) { this.languages = languages; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

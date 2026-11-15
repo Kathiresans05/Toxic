@@ -125,6 +125,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> updateExpertProfile({
+    String? headline,
     String? bio,
     int? experienceYears,
     List<String>? languages,
@@ -138,6 +139,7 @@ class ApiService {
       final response = await _dio.put(
         '/experts/profile',
         data: {
+          'headline': ?headline,
           'bio': ?bio,
           'experienceYears': ?experienceYears,
           'languages': ?languages,

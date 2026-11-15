@@ -346,8 +346,15 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
       final name = (user['fullName'] ?? user['name'] ?? e['name'] ?? '').toString().toLowerCase();
       final bio = (e['headline'] ?? e['bio'])?.toString().toLowerCase() ?? '';
       final cats = (e['categories'] as List<dynamic>?)?.map((c) => c.toString()).toList() ?? [];
-      final langs = (e['languages'] as List<dynamic>?)?.map((l) => l.toString()).toList() ?? ['Tamil', 'English'];
-      final isOnline = e['available'] == true || e['isOnline'] == true;
+      List<String> langs = [];
+      if (e['languages'] is List) {
+        langs = (e['languages'] as List).map((l) => l.toString().trim()).where((l) => l.isNotEmpty).toList();
+      } else if (e['languages'] is String && (e['languages'] as String).trim().isNotEmpty) {
+        langs = (e['languages'] as String).split(',').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+      } else if (user['preferredLanguage'] != null && user['preferredLanguage'].toString().trim().isNotEmpty) {
+        langs = [user['preferredLanguage'].toString().trim()];
+      }
+      final isOnline = (e['available'] ?? e['isOnline']) == true;
       final isBusy = e['isBusy'] == true;
 
       final query = _searchController.text.toLowerCase();
@@ -758,12 +765,20 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                           final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
                           final videoRate = double.tryParse(expert['videoRatePerMin']?.toString() ?? '') ?? (rate * 1.5);
                           final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
-                          final headline = (expert['headline'] ?? expert['bio'] ?? 'Creator & Consultant').toString();
-                          final expertLangs = (expert['languages'] as List<dynamic>?)?.map((l) => l.toString()).toList() ?? ['Tamil', 'English'];
-                          final languages = expertLangs.join(', ');
+                          final headline = (expert['headline'] ?? expert['bio'] ?? user['bio'] ?? 'Expert Consultant').toString();
+                          final isVerified = user['verified'] == true || expert['isVerified'] == true || expert['verified'] == true;
+                          List<String> expertLangs = [];
+                          if (expert['languages'] is List) {
+                            expertLangs = (expert['languages'] as List).map((l) => l.toString().trim()).where((l) => l.isNotEmpty).toList();
+                          } else if (expert['languages'] is String && (expert['languages'] as String).trim().isNotEmpty) {
+                            expertLangs = (expert['languages'] as String).split(',').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+                          } else if (user['preferredLanguage'] != null && user['preferredLanguage'].toString().trim().isNotEmpty) {
+                            expertLangs = [user['preferredLanguage'].toString().trim()];
+                          }
+                          final languages = expertLangs.isNotEmpty ? expertLangs.join(', ') : 'All Languages';
                           final matchingLangs = expertLangs.where((l) => userLangs.contains(l.toLowerCase())).toList();
                           final hasLanguageMatch = matchingLangs.isNotEmpty;
-                          final isOnline = expert['available'] == true || expert['isOnline'] == true;
+                          final isOnline = (expert['available'] ?? expert['isOnline']) == true;
                           final isBusy = expert['isBusy'] == true;
                           final statusColor = !isOnline ? const Color(0xFF94A3B8) : (isBusy ? const Color(0xFFEF4444) : const Color(0xFF10B981));
                           final statusText = !isOnline ? 'Offline' : (isBusy ? 'Busy' : 'Online');
@@ -905,8 +920,10 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                         overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 4),
-                                                    const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 16),
+                                                    if (isVerified) ...[
+                                                      const SizedBox(width: 4),
+                                                      const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 16),
+                                                    ],
                                                     const Spacer(),
                                                     // Rating Badge
                                                     Container(

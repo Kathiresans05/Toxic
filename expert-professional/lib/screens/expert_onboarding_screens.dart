@@ -1696,6 +1696,7 @@ class _TellUsAboutYouScreenState extends State<TellUsAboutYouScreen> {
       try {
         final apiService = ApiService();
         await apiService.updateExpertProfile(
+          headline: _selectedExpertise.isNotEmpty ? _selectedExpertise.join(' • ') : effectiveBio,
           bio: effectiveBio,
           experienceYears: years,
           languages: _selectedLanguages.toList(),
