@@ -511,14 +511,271 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showExpertQuickCallSheet(BuildContext context, Map<String, dynamic> expert) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDark = themeProvider.isDarkMode;
+    final user = expert['user'] is Map ? expert['user'] : {};
+    final name = user['fullName'] ?? user['name'] ?? expert['name'] ?? 'Expert';
+    final avatar = user['avatarUrl'] ?? user['profilePhotoUrl'] ?? expert['avatar'] ?? '';
+    final headline = (expert['headline'] ?? 'Creator & Consultant').toString();
+    final rating = double.tryParse((expert['ratingAverage'] ?? expert['rating'])?.toString() ?? '5.0') ?? 5.0;
+    final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
+    final videoRate = double.tryParse(expert['videoRatePerMin']?.toString() ?? '') ?? (rate * 1.5);
+    final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
+    final languages = (expert['languages'] as List<dynamic>?)?.join(', ') ?? 'Tamil, English';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF131823) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle drag bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Expert Avatar with ring and live status dot
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(3.5),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 36,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                      child: avatar.isEmpty
+                          ? Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                              style: const TextStyle(
+                                color: Color(0xFF2563EB),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 26,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 2,
+                    right: 4,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF131823) : Colors.white,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Name + Verified Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 18),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                headline,
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Rating + Languages pill
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$rating Rating',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      languages,
+                      style: TextStyle(
+                        color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+
+              // Call Actions (Audio & Video)
+              Row(
+                children: [
+                  // Audio Call Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CallScreen(
+                              expertName: name,
+                              expertId: expertId,
+                              pricePerMinute: rate,
+                              callType: 'audio',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 18),
+                      label: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Audio Call',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '₹${rate.toStringAsFixed(0)}/min',
+                            style: const TextStyle(color: Colors.white70, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Video Call Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CallScreen(
+                              expertName: name,
+                              expertId: expertId,
+                              pricePerMinute: videoRate,
+                              callType: 'video',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                      label: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Video Call',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '₹${videoRate.toStringAsFixed(0)}/min',
+                            style: const TextStyle(color: Colors.white70, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFeaturedExpertsHorizontal(BuildContext context, List<dynamic> sortedExperts) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
-    final textSubColor = isDark ? Colors.grey.shade400 : AppTheme.lightTextSecondary;
 
     if (_isLoadingExperts) {
       return const SizedBox(
-        height: 220,
+        height: 90,
         child: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
       );
     }
@@ -526,37 +783,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final list = sortedExperts;
 
     if (list.isEmpty) {
-      return Container(
-        height: 130,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.people_outline_rounded, color: textSubColor, size: 36),
-              const SizedBox(height: 8),
-              Text(
-                'No experts currently online',
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13.5),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Registered creators will appear here when active',
-                style: TextStyle(color: textSubColor, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return SizedBox(
-      height: 235,
+      height: 98,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: list.length,
@@ -565,246 +796,90 @@ class _HomeScreenState extends State<HomeScreen> {
           final user = expert['user'] is Map ? expert['user'] : {};
           final name = user['fullName'] ?? user['name'] ?? expert['name'] ?? 'Expert';
           final avatar = user['avatarUrl'] ?? user['profilePhotoUrl'] ?? expert['avatar'] ?? '';
-          final headline = (expert['headline'] ?? 'Creator & Consultant').toString();
-          final rating = double.tryParse((expert['ratingAverage'] ?? expert['rating'])?.toString() ?? '5.0') ?? 5.0;
-          final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
-          final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
-          final tier = (expert['tier'] ?? 'STANDARD').toString().toUpperCase();
-          final isElite = tier == 'ELITE';
+          final firstName = name.toString().split(' ').first;
 
-          return Container(
-            width: 175,
-            margin: const EdgeInsets.only(right: 14),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF131823) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.black.withValues(alpha: 0.35) : const Color(0xFF64748B).withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Avatar with live pulse badge
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF10B981)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                        backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                        child: avatar.isEmpty
-                            ? Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                                style: const TextStyle(
-                                  color: Color(0xFF6366F1),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 22,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          return GestureDetector(
+            onTap: () => _showExpertQuickCallSheet(context, expert),
+            child: Container(
+              margin: const EdgeInsets.only(right: 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    children: [
+                      // Gradient Border Ring (Image 2 style)
+                      Container(
+                        padding: const EdgeInsets.all(2.8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF131823) : Colors.white,
-                            width: 2,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircleAvatar(radius: 2.5, backgroundColor: Colors.white),
-                            SizedBox(width: 3),
-                            Text(
-                              'ONLINE',
-                              style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // Name & Verified Badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                            backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                            child: avatar.isEmpty
+                                ? Text(
+                                    name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                    style: const TextStyle(
+                                      color: Color(0xFF2563EB),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                    ),
+                                  )
+                                : null,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    if (isElite)
-                      const Text('👑', style: TextStyle(fontSize: 11))
-                    else
-                      const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 14),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                // Headline
-                Text(
-                  headline,
-                  style: TextStyle(
-                    color: textSubColor,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // Rating & Price row
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
-                      const SizedBox(width: 2),
-                      Text(
-                        '$rating',
-                        style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        ' • ',
-                        style: TextStyle(color: textSubColor),
-                      ),
-                      Text(
-                        '₹${rate.toStringAsFixed(0)}/m',
-                        style: const TextStyle(
-                          color: Color(0xFF10B981),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                      // Live green status dot on bottom right (Image 2 style)
+                      Positioned(
+                        right: 1,
+                        bottom: 1,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              width: 2.2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const Spacer(),
-                // Call Buttons Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CallScreen(
-                                expertName: name,
-                                expertId: expertId,
-                                pricePerMinute: rate,
-                                callType: 'audio',
-                              ),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF059669)],
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              )
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.call_rounded, color: Colors.white, size: 13),
-                              SizedBox(width: 4),
-                              Text('Call', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800)),
-                            ],
-                          ),
-                        ),
-                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    firstName,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(width: 6),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CallScreen(
-                              expertName: name,
-                              expertId: expertId,
-                              pricePerMinute: rate * 1.5,
-                              callType: 'video',
-                            ),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                        child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           );
         },
