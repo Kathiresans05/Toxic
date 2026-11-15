@@ -1373,12 +1373,35 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
     final double videoRate = double.tryParse((expert?['videoRatePerMin'] ?? expert?['videoCallRate'])?.toString() ?? '') ?? (audioRate * 1.5);
     final String avatar = user['profilePhotoUrl'] ?? user['avatarUrl'] ?? expert?['avatar'] ?? '';
     final String initialLetter = expertName.isNotEmpty ? expertName.substring(0, 1).toUpperCase() : 'E';
-    final double rating = double.tryParse((expert?['ratingAverage'] ?? expert?['rating'])?.toString() ?? '') ?? 4.9;
-    final int reviewsCount = int.tryParse(expert?['totalReviews']?.toString() ?? '') ?? 120;
-    final String experience = '${expert?['experienceYears'] ?? 5}+ Years';
-    final String headline = expert?['headline'] ?? 'Certified Relationship & Mindset Consultant';
+    final double rating = double.tryParse((expert?['ratingAverage'] ?? expert?['rating'])?.toString() ?? '') ?? 5.0;
+    final int reviewsCount = int.tryParse(expert?['totalReviews']?.toString() ?? '') ?? 0;
+    final int totalConsultations = int.tryParse((expert?['totalConsultations'] ?? expert?['totalCalls'])?.toString() ?? '') ?? 0;
+    final int expYears = int.tryParse(expert?['experienceYears']?.toString() ?? '') ?? 0;
+    final String experience = expYears > 0 ? '$expYears+ Years' : 'Verified';
+    final String headline = (expert?['headline'] ?? 'Creator & Consultant').toString();
+    final String bio = (expert?['bio'] ?? '').toString().trim();
     final List<dynamic> languagesList = expert?['languages'] as List<dynamic>? ?? ['Tamil', 'English'];
     final bool isOnline = expert?['available'] == true || expert?['isOnline'] == true;
+    final bool isVerified = user['verified'] == true || expert?['verified'] == true || expert?['isApproved'] == true;
+    final String tier = (expert?['tier'] ?? 'STANDARD').toString();
+
+    final String topBadge = tier == 'ELITE'
+        ? '👑 Elite Consultant'
+        : (isVerified ? '✓ Verified Consultant' : '★ Active Consultant');
+
+    List<String> topics = [];
+    if (expert?['categories'] is List && (expert?['categories'] as List).isNotEmpty) {
+      topics = (expert?['categories'] as List).map((c) => '#${c.toString().replaceAll(' ', '')}').toList();
+    } else if (expert?['category'] is Map && expert?['category']['name'] != null) {
+      topics = ['#${expert?['category']['name'].toString().replaceAll(' ', '')}'];
+    } else if (expert?['categoryName'] != null) {
+      topics = ['#${expert?['categoryName'].toString().replaceAll(' ', '')}'];
+    } else if (expert?['headline'] != null) {
+      topics = (expert!['headline'].toString()).split(RegExp(r'[,•&|]')).map((s) => '#${s.trim().replaceAll(' ', '')}').where((s) => s.length > 2).toList();
+    }
+    if (topics.isEmpty) {
+      topics = ['#1on1Consulting', '#VerifiedExpert', '#PrivateCall'];
+    }
 
     final isLight = Theme.of(context).brightness == Brightness.light;
     final Color bgColor = isLight ? AppTheme.lightBackground : AppTheme.darkBackground;
@@ -1412,14 +1435,14 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                               end: Alignment.bottomRight,
                               colors: isLight
                                   ? const [
-                                      Color(0xFFFFEDD5),
-                                      Color(0xFFFED7AA),
-                                      Color(0xFFF59E0B),
+                                      Color(0xFF0A1E42),
+                                      Color(0xFF1E3A8A),
+                                      Color(0xFF2563EB),
                                     ]
                                   : const [
+                                      Color(0xFF0A0F1D),
+                                      Color(0xFF111827),
                                       Color(0xFF1E293B),
-                                      Color(0xFF0F172A),
-                                      Color(0xFFD97706),
                                     ],
                             ),
                           ),
@@ -1430,32 +1453,47 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                 top: -20,
                                 child: CircleAvatar(
                                   radius: 90,
-                                  backgroundColor: AppTheme.primary.withValues(alpha: isLight ? 0.25 : 0.12),
+                                  backgroundColor: Colors.white.withValues(alpha: 0.08),
                                 ),
                               ),
-                              // Top Verified Consultant Badge positioned at bottom right
+                              // Real Tier / Verification Badge
                               Positioned(
                                 right: 16,
                                 bottom: 14,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: isLight ? Colors.white.withValues(alpha: 0.9) : Colors.black.withValues(alpha: 0.4),
+                                    color: Colors.black.withValues(alpha: 0.35),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppTheme.primary.withValues(alpha: isLight ? 0.6 : 0.3)),
-                                    boxShadow: isLight
-                                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                                        : null,
+                                    border: Border.all(
+                                      color: isVerified
+                                          ? const Color(0xFF60A5FA)
+                                          : const Color(0xFFFBBF24),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.15),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.auto_awesome, color: AppTheme.primary, size: 14),
+                                      Icon(
+                                        tier == 'ELITE'
+                                            ? Icons.workspace_premium_rounded
+                                            : (isVerified ? Icons.verified_rounded : Icons.star_rounded),
+                                        color: tier == 'ELITE' || !isVerified ? const Color(0xFFFBBF24) : const Color(0xFF60A5FA),
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        'Top Verified Consultant',
-                                        style: TextStyle(
-                                          color: isLight ? const Color(0xFFB45309) : AppTheme.primary,
+                                        topBadge,
+                                        style: const TextStyle(
+                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 11,
                                           letterSpacing: 0.3,
@@ -1510,31 +1548,53 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                           child: Stack(
                             children: [
                               Container(
+                                padding: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppTheme.primary, width: 3.5),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.primary.withValues(alpha: isLight ? 0.45 : 0.4),
-                                      blurRadius: 18,
+                                      color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                                      blurRadius: 16,
                                       spreadRadius: 2,
                                     ),
                                   ],
                                 ),
-                                child: CircleAvatar(
-                                  radius: 46,
-                                  backgroundColor: isLight ? const Color(0xFFFDE8D7) : const Color(0xFF1E293B),
-                                  backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                                  child: avatar.isEmpty
-                                      ? Text(
-                                          initialLetter,
-                                          style: const TextStyle(
-                                            fontSize: 38,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.primary,
-                                          ),
-                                        )
-                                      : null,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2.5),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Container(
+                                    width: 86,
+                                    height: 86,
+                                    decoration: BoxDecoration(
+                                      gradient: avatar.isEmpty
+                                          ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)])
+                                          : null,
+                                      shape: BoxShape.circle,
+                                      image: avatar.isNotEmpty
+                                          ? DecorationImage(image: NetworkImage(avatar), fit: BoxFit.cover)
+                                          : null,
+                                    ),
+                                    child: avatar.isEmpty
+                                        ? Center(
+                                            child: Text(
+                                              initialLetter,
+                                              style: const TextStyle(
+                                                fontSize: 36,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          )
+                                        : null,
+                                  ),
                                 ),
                               ),
                               Positioned(
@@ -1544,9 +1604,16 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                   width: 20,
                                   height: 20,
                                   decoration: BoxDecoration(
-                                    color: isOnline ? Colors.green : Colors.grey,
+                                    color: isOnline ? const Color(0xFF10B981) : Colors.grey,
                                     shape: BoxShape.circle,
                                     border: Border.all(color: bgColor, width: 3.5),
+                                    boxShadow: [
+                                      if (isOnline)
+                                        BoxShadow(
+                                          color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                                          blurRadius: 6,
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -1609,7 +1676,7 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Icon(Icons.verified, color: AppTheme.primary, size: 22),
+                              const Icon(Icons.verified, color: Color(0xFF2563EB), size: 22),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -1619,7 +1686,7 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                           ),
                           const SizedBox(height: 14),
 
-                            // Micro info row: Rating, response time, languages
+                            // Micro info row: Rating, real online status, languages
                             Wrap(
                               spacing: 12,
                               runSpacing: 8,
@@ -1640,8 +1707,8 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                         style: TextStyle(color: primaryText, fontWeight: FontWeight.bold, fontSize: 13),
                                       ),
                                       Text(
-                                        ' ($reviewsCount Reviews)',
-                                        style: TextStyle(color: secondaryText, fontSize: 12, decoration: TextDecoration.underline),
+                                        reviewsCount > 0 ? ' ($reviewsCount Reviews)' : ' (New Expert)',
+                                        style: TextStyle(color: secondaryText, fontSize: 12),
                                       ),
                                     ],
                                   ),
@@ -1649,9 +1716,16 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.bolt_rounded, color: AppTheme.primary, size: 16),
-                                    const SizedBox(width: 2),
-                                    Text('~2 min response', style: TextStyle(color: secondaryText, fontSize: 12)),
+                                    Icon(Icons.circle, color: isOnline ? const Color(0xFF10B981) : Colors.grey, size: 8),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      isOnline ? 'Online Now' : 'Currently Away',
+                                      style: TextStyle(
+                                        color: isOnline ? (isLight ? const Color(0xFF047857) : const Color(0xFF34D399)) : secondaryText,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 Row(
@@ -1666,17 +1740,47 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                             ),
                             const SizedBox(height: 18),
 
-                            // Glassmorphic Stats Row
+                            // Real Stats Row from Database
                             Row(
                               children: [
                                 Expanded(child: _buildModernStat(icon: Icons.workspace_premium_rounded, label: 'Experience', value: experience)),
                                 const SizedBox(width: 10),
-                                Expanded(child: _buildModernStat(icon: Icons.favorite_rounded, label: 'Clients', value: '120+ Happy')),
+                                Expanded(child: _buildModernStat(icon: Icons.star_rounded, label: 'Rating', value: '${rating.toStringAsFixed(1)} ★')),
                                 const SizedBox(width: 10),
-                                Expanded(child: _buildModernStat(icon: Icons.phone_in_talk_rounded, label: 'Consultations', value: '250+ Calls')),
+                                Expanded(child: _buildModernStat(icon: Icons.phone_in_talk_rounded, label: 'Consultations', value: totalConsultations > 0 ? '$totalConsultations Calls' : 'Ready Live')),
                               ],
                             ),
-                            const SizedBox(height: 26),
+                            const SizedBox(height: 22),
+
+                            // Real About & Bio Section
+                            if (bio.isNotEmpty) ...[
+                              Text(
+                                'About Consultant 💬',
+                                style: TextStyle(color: primaryText, fontSize: 17, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: cardBorder),
+                                  boxShadow: isLight
+                                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1))]
+                                      : null,
+                                ),
+                                child: Text(
+                                  bio,
+                                  style: TextStyle(
+                                    color: isLight ? const Color(0xFF334155) : Colors.grey.shade300,
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 22),
+                            ],
 
                             // 5. Consultation Options Cards (Topmate Services)
                             Text(
@@ -1762,20 +1866,15 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: [
-                                '#RelationshipGuidance',
-                                '#BreakupHealing',
-                                '#StressRelief',
-                                '#CareerClarity',
-                                '#FriendlyListener',
-                                '#LifeMotivation',
-                              ].map((topic) {
+                              children: topics.map((topic) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                                   decoration: BoxDecoration(
                                     color: cardBg,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: isLight ? const Color(0xFFFDE8D7) : AppTheme.primary.withValues(alpha: 0.4)),
+                                    border: Border.all(
+                                      color: isLight ? const Color(0xFFBFDBFE) : const Color(0xFF2563EB).withValues(alpha: 0.4),
+                                    ),
                                     boxShadow: isLight
                                         ? [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1))]
                                         : null,
@@ -1783,7 +1882,7 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                   child: Text(
                                     topic,
                                     style: TextStyle(
-                                      color: isLight ? const Color(0xFFB45309) : AppTheme.primary,
+                                      color: isLight ? const Color(0xFF1D4ED8) : const Color(0xFF60A5FA),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
