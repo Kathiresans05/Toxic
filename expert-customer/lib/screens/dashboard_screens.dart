@@ -36,7 +36,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
 
   final List<String> _languageFilters = ['All Languages', 'Tamil', 'English', 'Hindi', 'Telugu', 'Malayalam'];
   String _selectedLanguage = 'All Languages';
-  final String _selectedStatus = 'All Status';
+  String _selectedStatus = 'All Status';
 
   List<dynamic> _experts = [];
   bool _isLoading = true;
@@ -202,66 +202,6 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
     );
   }
 
-  Widget _buildFilterPill({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required bool isLight,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primary
-              : (isLight ? Colors.white : AppTheme.darkCardColor),
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primary
-                : (isLight ? AppTheme.lightCardBorder : Colors.white12),
-            width: 1,
-          ),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.35),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              )
-            else if (isLight)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              )
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              const Icon(Icons.check_rounded, size: 14, color: Colors.black),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected
-                    ? Colors.black
-                    : (isLight ? const Color(0xFF475569) : Colors.white70),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     List<dynamic> filtered = _experts.where((e) {
@@ -338,46 +278,112 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
 
     final isLight = Theme.of(context).brightness == Brightness.light;
     final textColor = isLight ? const Color(0xFF0F172A) : Colors.white;
-    final cardBg = Theme.of(context).cardColor;
+
+    final onlineCount = _experts.where((e) => (e['available'] == true || e['isOnline'] == true)).length;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isLight ? const Color(0xFFF8FAFC) : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Explore Experts', style: TextStyle(fontWeight: FontWeight.bold)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        elevation: 0,
+        backgroundColor: isLight ? Colors.white : const Color(0xFF0F172A),
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: isLight ? const Color(0xFF0F172A) : Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        title: Row(
+          children: [
+            Text(
+              'Explore Experts',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: isLight ? const Color(0xFF0F172A) : Colors.white,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$onlineCount Live',
+                    style: const TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       body: Column(
         children: [
+          // Search & Filter Trigger
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(color: isLight ? AppTheme.lightCardBorder : Colors.white10),
-                      boxShadow: isLight ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ] : [],
+                      color: isLight ? Colors.white : const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isLight ? const Color(0xFFE2E8F0) : Colors.white12,
+                      ),
+                      boxShadow: isLight
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : [],
                     ),
                     child: TextField(
                       controller: _searchController,
-                      style: TextStyle(color: textColor),
-                      decoration: const InputDecoration(
-                        hintText: 'Search experts...',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, skill, topic...',
+                        hintStyle: TextStyle(
+                          color: isLight ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2563EB), size: 22),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(15),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                     ),
                   ),
@@ -388,32 +394,171 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isLight ? Colors.white : cardBg,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isLight ? AppTheme.lightCardBorder : Colors.white10),
-                      boxShadow: isLight ? [
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ] : [],
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    child: Icon(Icons.tune_rounded, color: AppTheme.primary, size: 22),
+                    child: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
                   ),
-                )
+                ),
               ],
             ),
           ),
 
-          const SizedBox(height: 8),
+          // Horizontal Quick Category Filter Chips
+          Container(
+            height: 38,
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildQuickChip(
+                  label: '✨ All',
+                  isSelected: _selectedFilter == 'All' && _selectedStatus == 'All Status' && _selectedLanguage == 'All Languages',
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = 'All';
+                      _selectedStatus = 'All Status';
+                      _selectedLanguage = 'All Languages';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '🟢 Online Now',
+                  isSelected: _selectedStatus == 'Online 🟢',
+                  onTap: () {
+                    setState(() {
+                      _selectedStatus = _selectedStatus == 'Online 🟢' ? 'All Status' : 'Online 🟢';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '⭐ Top Rated',
+                  isSelected: _selectedFilter == 'Rating',
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = _selectedFilter == 'Rating' ? 'All' : 'Rating';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '🗣️ Tamil',
+                  isSelected: _selectedLanguage == 'Tamil',
+                  onTap: () {
+                    setState(() {
+                      _selectedLanguage = _selectedLanguage == 'Tamil' ? 'All Languages' : 'Tamil';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '❤️ Relationship',
+                  isSelected: _selectedFilter.contains('Relationship'),
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = _selectedFilter.contains('Relationship') ? 'All' : 'Love & Relationship';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '💬 Vent & Confess',
+                  isSelected: _selectedFilter.contains('Vent'),
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = _selectedFilter.contains('Vent') ? 'All' : 'Vent Out & Confessions';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: '⚡ Best Price',
+                  isSelected: _selectedFilter == 'Price \u2193',
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = _selectedFilter == 'Price \u2193' ? 'All' : 'Price \u2193';
+                    });
+                  },
+                  isLight: isLight,
+                ),
+              ],
+            ),
+          ),
+
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
                 : filtered.isEmpty
-                    ? const Center(child: Text('No experts found', style: TextStyle(color: Colors.grey)))
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.person_search_rounded, size: 48, color: Color(0xFF2563EB)),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No experts found',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: isLight ? const Color(0xFF0F172A) : Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Try clearing filters or search for another keyword',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isLight ? const Color(0xFF64748B) : Colors.grey.shade400,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _searchController.clear();
+                                    _selectedFilter = 'All';
+                                    _selectedStatus = 'All Status';
+                                    _selectedLanguage = 'All Languages';
+                                  });
+                                },
+                                icon: const Icon(Icons.refresh_rounded, size: 16),
+                                label: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final expert = filtered[index];
@@ -422,190 +567,388 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                           final avatar = user['avatarUrl'] ?? user['profilePhotoUrl'] ?? expert['avatar'] ?? '';
                           final rating = double.tryParse((expert['ratingAverage'] ?? expert['rating'])?.toString() ?? '5.0') ?? 5.0;
                           final rate = double.tryParse((expert['audioRatePerMin'] ?? expert['pricePerMinute'])?.toString() ?? '5.0') ?? 5.0;
+                          final videoRate = double.tryParse(expert['videoRatePerMin']?.toString() ?? '') ?? (rate * 1.5);
+                          final expertId = (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'].toString() : (user['id']?.toString() ?? '');
+                          final headline = (expert['headline'] ?? expert['bio'] ?? 'Creator & Consultant').toString();
                           final expertLangs = (expert['languages'] as List<dynamic>?)?.map((l) => l.toString()).toList() ?? ['Tamil', 'English'];
                           final languages = expertLangs.join(', ');
                           final matchingLangs = expertLangs.where((l) => userLangs.contains(l.toLowerCase())).toList();
                           final hasLanguageMatch = matchingLangs.isNotEmpty;
                           final isOnline = expert['available'] == true || expert['isOnline'] == true;
                           final isBusy = expert['isBusy'] == true;
-                          final statusColor = !isOnline ? Colors.grey : (isBusy ? Colors.red : Colors.green);
+                          final statusColor = !isOnline ? const Color(0xFF94A3B8) : (isBusy ? const Color(0xFFEF4444) : const Color(0xFF10B981));
                           final statusText = !isOnline ? 'Offline' : (isBusy ? 'Busy' : 'Online');
 
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ExpertProfileScreen(name: name, rate: rate, expert: expert),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 15),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: isLight ? AppTheme.lightCardBorder : Colors.white10),
-                                boxShadow: isLight ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ] : null,
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: isLight ? Colors.white : const Color(0xFF131823),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isLight ? const Color(0xFFE2E8F0) : Colors.white.withValues(alpha: 0.08),
+                                width: 1.2,
                               ),
-                              child: Row(
-                                children: [
-                                  Stack(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isLight
+                                      ? const Color(0xFF0F172A).withValues(alpha: 0.04)
+                                      : Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ExpertProfileScreen(name: name, rate: rate, expert: expert),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      CircleAvatar(
-                                        radius: 30,
-                                        backgroundColor: isLight ? Colors.grey.shade300 : Colors.grey.shade800,
-                                        backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                                        child: avatar.isEmpty
-                                            ? Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'E', style: TextStyle(color: textColor, fontWeight: FontWeight.bold))
-                                            : null,
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        right: 0,
-                                        child: Container(
-                                          width: 14,
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            color: statusColor,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                                      // Top Row: Avatar + Details
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Avatar with gradient ring and online dot
+                                          Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(3),
+                                                decoration: const BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  ),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: CircleAvatar(
+                                                  radius: 28,
+                                                  backgroundColor: isLight ? const Color(0xFFEFF6FF) : const Color(0xFF1E293B),
+                                                  backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                                                  child: avatar.isEmpty
+                                                      ? Text(
+                                                          name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                                          style: const TextStyle(
+                                                            color: Color(0xFF2563EB),
+                                                            fontWeight: FontWeight.w900,
+                                                            fontSize: 22,
+                                                          ),
+                                                        )
+                                                      : null,
+                                                ),
+                                              ),
+                                              Positioned(
+                                                bottom: 1,
+                                                right: 1,
+                                                child: Container(
+                                                  width: 14,
+                                                  height: 14,
+                                                  decoration: BoxDecoration(
+                                                    color: statusColor,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: isLight ? Colors.white : const Color(0xFF131823),
+                                                      width: 2.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          name,
-                                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Wrap(
-                                          spacing: 5,
-                                          runSpacing: 4,
-                                          crossAxisAlignment: WrapCrossAlignment.center,
-                                          children: [
-                                            const Icon(Icons.verified, color: AppTheme.primary, size: 13),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: statusColor.withValues(alpha: 0.15),
-                                                borderRadius: BorderRadius.circular(10),
-                                                border: Border.all(color: statusColor, width: 0.8),
-                                              ),
-                                              child: Text(
-                                                statusText,
-                                                style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
+                                          const SizedBox(width: 14),
+
+                                          // Name & details
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                const Icon(Icons.star, color: Colors.amber, size: 12),
-                                                const SizedBox(width: 2),
-                                                Text(rating.toStringAsFixed(1), style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        name,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w800,
+                                                          color: isLight ? const Color(0xFF0F172A) : Colors.white,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 16),
+                                                    const Spacer(),
+                                                    // Rating Badge
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFFEF3C7),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 14),
+                                                          const SizedBox(width: 3),
+                                                          Text(
+                                                            rating.toStringAsFixed(1),
+                                                            style: const TextStyle(
+                                                              color: Color(0xFF92400E),
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w800,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  headline,
+                                                  style: TextStyle(
+                                                    color: isLight ? const Color(0xFF64748B) : Colors.grey.shade400,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Wrap(
+                                                  spacing: 6,
+                                                  runSpacing: 4,
+                                                  children: [
+                                                    // Status tag
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: statusColor.withValues(alpha: 0.12),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Container(
+                                                            width: 5,
+                                                            height: 5,
+                                                            decoration: BoxDecoration(
+                                                              color: statusColor,
+                                                              shape: BoxShape.circle,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            statusText,
+                                                            style: TextStyle(
+                                                              color: statusColor,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.w700,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    if (hasLanguageMatch)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          '${matchingLangs.first} Match 🌟',
+                                                          style: const TextStyle(
+                                                            color: Color(0xFFD97706),
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w700,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    else
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: isLight ? const Color(0xFFF1F5F9) : Colors.white10,
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Text(
+                                                          languages,
+                                                          style: TextStyle(
+                                                            color: isLight ? const Color(0xFF64748B) : Colors.white70,
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
                                               ],
                                             ),
-                                            if (hasLanguageMatch)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                                                  borderRadius: BorderRadius.circular(10),
-                                                  border: Border.all(color: const Color(0xFFF59E0B), width: 0.8),
-                                                ),
-                                                child: Text(
-                                                  '${matchingLangs.first} Match 🌟',
-                                                  style: const TextStyle(color: Color(0xFFD97706), fontSize: 9, fontWeight: FontWeight.bold),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          'Relationship • $languages',
-                                          style: TextStyle(color: isLight ? Colors.grey.shade600 : Colors.grey, fontSize: 11),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text('₹${rate.toStringAsFixed(0)}/min', style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Audio Call Button (Secondary Emerald)
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => CallScreen(
-                                                expertName: name,
-                                                expertId: (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'] : (expert['user']?['id'] ?? ''),
-                                                pricePerMinute: rate,
-                                                callType: 'audio',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          width: 38,
-                                          height: 38,
-                                          decoration: const BoxDecoration(
-                                            color: AppTheme.secondary,
-                                            shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.call_rounded, color: Colors.white, size: 19),
-                                        ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      // Video Call Button
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => CallScreen(
-                                                expertName: name,
-                                                expertId: (expert['id'] != null && expert['id'].toString().isNotEmpty) ? expert['id'] : (expert['user']?['id'] ?? ''),
-                                                pricePerMinute: rate * 1.5,
-                                                callType: 'video',
+
+                                      const SizedBox(height: 12),
+
+                                      // Divider
+                                      Divider(
+                                        height: 1,
+                                        color: isLight ? const Color(0xFFF1F5F9) : Colors.white.withValues(alpha: 0.06),
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Bottom Actions: Price + Audio/Video Call Buttons
+                                      Row(
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                                textBaseline: TextBaseline.alphabetic,
+                                                children: [
+                                                  Text(
+                                                    '₹${rate.toStringAsFixed(0)}',
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: isLight ? const Color(0xFF0F172A) : Colors.white,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '/min',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isLight ? const Color(0xFF64748B) : Colors.grey.shade400,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              Text(
+                                                'Video: ₹${videoRate.toStringAsFixed(0)}/min',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: isLight ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const Spacer(),
+
+                                          // Audio Call
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => CallScreen(
+                                                    expertName: name,
+                                                    expertId: expertId,
+                                                    pricePerMinute: rate,
+                                                    callType: 'audio',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [Color(0xFF059669), Color(0xFF10B981)],
+                                                ),
+                                                borderRadius: BorderRadius.circular(12),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.call_rounded, color: Colors.white, size: 15),
+                                                  SizedBox(width: 5),
+                                                  Text(
+                                                    'Call',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          );
-                                        },
-                                        child: Container(
-                                          width: 38,
-                                          height: 38,
-                                          decoration: BoxDecoration(
-                                            color: isLight ? Colors.grey.shade200 : Colors.white.withValues(alpha: 0.08),
-                                            border: Border.all(color: isLight ? Colors.grey.shade300 : Colors.white.withValues(alpha: 0.14), width: 1.0),
-                                            shape: BoxShape.circle,
                                           ),
-                                          child: Icon(Icons.videocam_rounded, color: textColor, size: 20),
-                                        ),
+
+                                          const SizedBox(width: 8),
+
+                                          // Video Call
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => CallScreen(
+                                                    expertName: name,
+                                                    expertId: expertId,
+                                                    pricePerMinute: videoRate,
+                                                    callType: 'video',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: isLight ? const Color(0xFFEFF6FF) : const Color(0xFF1E293B),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: isLight ? const Color(0xFFBFDBFE) : const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.videocam_rounded, color: Color(0xFF2563EB), size: 16),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    'Video',
+                                                    style: TextStyle(
+                                                      color: Color(0xFF2563EB),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           );
@@ -613,6 +956,62 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isLight,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF2563EB)
+              : (isLight ? Colors.white : const Color(0xFF1E293B)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF2563EB)
+                : (isLight ? const Color(0xFFE2E8F0) : Colors.white12),
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : (isLight
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : []),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : (isLight ? const Color(0xFF475569) : Colors.white70),
+            ),
+          ),
+        ),
       ),
     );
   }
