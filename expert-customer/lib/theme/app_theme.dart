@@ -7,17 +7,24 @@ class AppTheme {
   static const Color secondary = Color(0xFF10B981); // Vibrant Emerald Green
   static const Color accent = Color(0xFFEC4899);    // Neon Pink Highlight
 
+  // Royal Purple Gradient Palette (Connecto / ConnectaX Premium)
+  static const List<Color> royalPurpleGradient = [
+    Color(0xFF1A0B2E),
+    Color(0xFF3B1578),
+    Color(0xFF5B21B6),
+  ];
+
   // Dark Theme Colors (Deep Slate Luxury Black: #0F172A)
   static const Color darkBackground = Color(0xFF0F172A);
   static const Color darkCardColor = Color(0xFF1E293B);
   static const Color darkCardBorder = Color(0xFF334155);
 
-  // Light Theme Colors (Warm Peach Ivory: #FFF6ED)
-  static const Color lightBackground = Color(0xFFFFF6ED);
+  // Light Theme Colors (Ultra-Clean Modern Slate: #F8FAFC)
+  static const Color lightBackground = Color(0xFFF8FAFC);
   static const Color lightCardColor = Color(0xFFFFFFFF);
-  static const Color lightCardBorder = Color(0xFFFDE8D7);
-  static const Color lightTextPrimary = Color(0xFF2D1E18);
-  static const Color lightTextSecondary = Color(0xFF786B65);
+  static const Color lightCardBorder = Color(0xFFE2E8F0);
+  static const Color lightTextPrimary = Color(0xFF0F172A);
+  static const Color lightTextSecondary = Color(0xFF64748B);
 
   // Legacy Fallbacks
   static const Color background = darkBackground;

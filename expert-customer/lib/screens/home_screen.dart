@@ -80,126 +80,149 @@ class _HomeScreenState extends State<HomeScreen> {
       return rb.compareTo(ra);
     });
 
+    final topPadding = MediaQuery.of(context).padding.top;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await authProvider.refreshProfile();
-            await _fetchExperts();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, name, isVip, balance),
-                const SizedBox(height: 16),
-                _buildModernHeroBanner(context),
-                const SizedBox(height: 22),
-                _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                  );
-                }),
-                const SizedBox(height: 12),
-                _buildFeaturedExpertsHorizontal(context, sortedOnlineExperts),
-                const SizedBox(height: 24),
-                _buildSectionHeader(context, 'Available Online Experts 🟢', onSeeAll: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                  );
-                }),
-                const SizedBox(height: 12),
-                _buildRealtimeExpertList(context, sortedOnlineExperts),
-                const SizedBox(height: 30),
-              ],
-            ),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await authProvider.refreshProfile();
+          await _fetchExperts();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildRoyalPurpleTopSection(context, name, isVip, balance, topPadding),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                    _buildFeaturedExpertsHorizontal(context, sortedOnlineExperts),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader(context, 'Available Online Experts 🟢', onSeeAll: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                    _buildRealtimeExpertList(context, sortedOnlineExperts),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, bool isVip, double balance) {
+  Widget _buildRoyalPurpleTopSection(
+    BuildContext context,
+    String name,
+    bool isVip,
+    double balance,
+    double topPadding,
+  ) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131823) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
-          width: 1,
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF0D051A), const Color(0xFF1E0A3C), const Color(0xFF3B1578)]
+              : [const Color(0xFF1E0A3C), const Color(0xFF3B1578), const Color(0xFF5B21B6)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF64748B).withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          )
+            color: const Color(0xFF3B1578).withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
+      padding: EdgeInsets.only(
+        top: topPadding + 14,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Brand & Greeting on Left + Luxury Wallet on Right
+          // 1. Top Brand Row (ConnectaX with Glowing Infinity Logo + Luxury Golden Wallet)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left: Commercial App Brand Identity
+              // Left: Infinity Logo + ConnectaX Branding + Tagline
               Row(
                 children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(13),
+                      shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: const Center(
                       child: Icon(
-                        Icons.bolt_rounded,
+                        Icons.all_inclusive_rounded,
                         color: Colors.white,
-                        size: 24,
+                        size: 26,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 11),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         children: [
-                          Text(
+                          const Text(
                             'ConnectaX',
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontSize: 19,
+                              color: Colors.white,
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.6,
                             ),
                           ),
                           if (isVip) ...[
-                            const SizedBox(width: 5),
+                            const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFD97706)]),
                                 borderRadius: BorderRadius.circular(8),
@@ -213,32 +236,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Hi, ${name.isNotEmpty ? name.split(' ').first : 'User'} 👋',
-                            style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Chat • Call • Consult',
+                        style: TextStyle(
+                          color: Color(0xFFDDD6FE),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-              // Right: Luxury Wallet Pill
+
+              // Right: Luxury Golden Wallet Pill (Requested by user)
               InkWell(
                 onTap: () {
                   Navigator.push(
@@ -248,25 +260,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 borderRadius: BorderRadius.circular(30),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                          : [const Color(0xFFFFFBEB), const Color(0xFFFEF3C7)],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                      width: 1.2,
+                      color: const Color(0xFFF59E0B),
+                      width: 1.4,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       )
                     ],
                   ),
@@ -290,10 +300,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          const Text(
                             'WALLET',
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : const Color(0xFF92400E),
+                              color: Color(0xFF92400E),
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -301,9 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           Text(
                             '₹${balance.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: isDark ? Colors.amber.shade200 : const Color(0xFF78350F),
-                              fontSize: 12.5,
+                            style: const TextStyle(
+                              color: Color(0xFF78350F),
+                              fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -326,8 +336,137 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          // Row 2: Amazon / Flipkart Style Integrated Search Bar
+
+          const SizedBox(height: 18),
+
+          // 2. Glassmorphic Hero Consultation Banner (Connecto Style)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.22),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.security_rounded, color: Color(0xFFFFD54F), size: 12),
+                          SizedBox(width: 5),
+                          Text(
+                            '100% PRIVATE & SECURE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
+                          SizedBox(width: 4.5),
+                          Text(
+                            '24/7 LIVE',
+                            style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Connect Better, Consult Happier!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Join instant 1-on-1 calls with verified relationship, stress & life advisors in seconds.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.phone_in_talk_rounded, size: 16, color: Color(0xFF4C1D95)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Talk to Expert Now ➔',
+                          style: TextStyle(
+                            color: Color(0xFF4C1D95),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. Integrated Modern Search Bar
           InkWell(
             onTap: () {
               Navigator.push(
@@ -337,54 +476,60 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFE2E8F0),
-                  width: 1,
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.search_rounded,
-                    color: Color(0xFF6366F1),
-                    size: 20,
+                    color: Color(0xFF6D28D9),
+                    size: 21,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Search experts, skills, categories...',
                       style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                        fontSize: 13,
+                        color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFEDE9FE),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.tune_rounded,
                           size: 13,
-                          color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
+                          color: Color(0xFF6D28D9),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           'Filter',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF6D28D9),
                           ),
                         ),
                       ],
@@ -393,166 +538,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernHeroBanner(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF1E1B4B), const Color(0xFF2E1065), const Color(0xFF172554)]
-              : [const Color(0xFF4F46E5), const Color(0xFF7C3AED), const Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.4 : 0.3),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.security_rounded, color: Color(0xFFFFD54F), size: 12),
-                    SizedBox(width: 5),
-                    Text(
-                      '100% PRIVATE & SECURE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(radius: 2.5, backgroundColor: Color(0xFF10B981)),
-                    SizedBox(width: 4),
-                    Text(
-                      '24/7 LIVE',
-                      style: TextStyle(color: Color(0xFF34D399), fontSize: 9.5, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Instant 1-on-1 Consultation',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Connect with verified relationship, stress & life advisors in seconds.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 12.5,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      )
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.call_rounded, size: 14, color: Color(0xFF4F46E5)),
-                      SizedBox(width: 6),
-                      Text(
-                        'Talk to Expert Now',
-                        style: TextStyle(
-                          color: Color(0xFF4F46E5),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFFFD54F)),
-                    SizedBox(width: 3),
-                    Text(
-                      'No Wait Time',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),

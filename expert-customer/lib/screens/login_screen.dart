@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:expert_customer/providers/auth_provider.dart';
+import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/screens/easy_auth_screen.dart';
 import 'package:expert_customer/screens/main_layout_screen.dart';
 
@@ -16,9 +18,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  Timer? _coldStartTimer;
+  int _elapsedSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _prewarmBackend();
+  }
+
+  void _prewarmBackend() async {
+    try {
+      await ApiService().client.get('/categories');
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
+    _coldStartTimer?.cancel();
     _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -38,14 +55,26 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _elapsedSeconds = 0;
+    });
+
+    _coldStartTimer?.cancel();
+    _coldStartTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _elapsedSeconds++);
+      }
+    });
 
     final success = await Provider.of<AuthProvider>(context, listen: false)
         .login(identifier, password);
 
-    setState(() => _isLoading = false);
+    _coldStartTimer?.cancel();
 
     if (mounted) {
+      setState(() => _isLoading = false);
+
       if (success) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -55,8 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Invalid credentials. Please check your mobile/email and password.'),
+            content: Text('Invalid credentials. Check mobile/email or try password: password123'),
             backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 4),
           ),
         );
       }
@@ -280,7 +310,50 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
               ),
-              const SizedBox(height: 28),
+
+              if (_isLoading && _elapsedSeconds >= 2) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 13,
+                            height: 13,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFFFB300),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Connecting to cloud server... ($_elapsedSeconds s)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_elapsedSeconds >= 8) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Server is waking up (Render free tier). Please wait...',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.amber.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
 
               // Sign Up redirect
               Row(
