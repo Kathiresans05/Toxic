@@ -784,27 +784,27 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                           final statusText = !isOnline ? 'Offline' : (isBusy ? 'Busy' : 'Online');
 
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 15),
+                            margin: const EdgeInsets.only(bottom: 10),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(22),
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(
                                 color: Colors.white,
-                                width: 1.5,
+                                width: 1.2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(18),
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(18),
                                 onTap: () {
                                   Navigator.push(
                                     context,
@@ -814,7 +814,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                   );
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -822,12 +822,12 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                       Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          // Avatar with vibrant colorful background and glowing online ring
+                                          // Compact Avatar with gradient ring
                                           Stack(
                                             alignment: Alignment.center,
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.all(2.5),
+                                                padding: const EdgeInsets.all(2),
                                                 decoration: BoxDecoration(
                                                   gradient: isLight
                                                       ? const LinearGradient(
@@ -843,14 +843,14 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Container(
-                                                  padding: const EdgeInsets.all(2),
+                                                  padding: const EdgeInsets.all(1.5),
                                                   decoration: BoxDecoration(
                                                     color: isLight ? Colors.white : const Color(0xFF131826),
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: Container(
-                                                    width: 54,
-                                                    height: 54,
+                                                    width: 44,
+                                                    height: 44,
                                                     decoration: BoxDecoration(
                                                       gradient: avatar.isEmpty ? _getAvatarGradient(name) : null,
                                                       shape: BoxShape.circle,
@@ -865,7 +865,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                               style: const TextStyle(
                                                                 color: Colors.white,
                                                                 fontWeight: FontWeight.w900,
-                                                                fontSize: 22,
+                                                                fontSize: 18,
                                                               ),
                                                             ),
                                                           )
@@ -874,23 +874,23 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                 ),
                                               ),
                                               Positioned(
-                                                bottom: 2,
-                                                right: 2,
+                                                bottom: 1,
+                                                right: 1,
                                                 child: Container(
-                                                  width: 14,
-                                                  height: 14,
+                                                  width: 12,
+                                                  height: 12,
                                                   decoration: BoxDecoration(
                                                     color: statusColor,
                                                     shape: BoxShape.circle,
                                                     border: Border.all(
                                                       color: isLight ? Colors.white : const Color(0xFF131826),
-                                                      width: 2.5,
+                                                      width: 2.0,
                                                     ),
                                                     boxShadow: [
                                                       if (isOnline && !isBusy)
                                                         BoxShadow(
                                                           color: const Color(0xFF10B981).withValues(alpha: 0.6),
-                                                          blurRadius: 6,
+                                                          blurRadius: 5,
                                                           spreadRadius: 1,
                                                         ),
                                                     ],
@@ -899,7 +899,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(width: 14),
+                                          const SizedBox(width: 11),
 
                                           // Name & details
                                           Expanded(
@@ -912,7 +912,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                       child: Text(
                                                         name,
                                                         style: TextStyle(
-                                                          fontSize: 16,
+                                                          fontSize: 15,
                                                           fontWeight: FontWeight.w800,
                                                           color: isLight ? const Color(0xFF0F172A) : Colors.white,
                                                         ),
@@ -922,26 +922,26 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                     ),
                                                     if (isVerified) ...[
                                                       const SizedBox(width: 4),
-                                                      const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 16),
+                                                      const Icon(Icons.verified_rounded, color: Color(0xFF3B82F6), size: 15),
                                                     ],
                                                     const Spacer(),
                                                     // Rating Badge
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                       decoration: BoxDecoration(
                                                         color: const Color(0xFFFEF3C7),
-                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderRadius: BorderRadius.circular(6),
                                                       ),
                                                       child: Row(
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
-                                                          const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 14),
-                                                          const SizedBox(width: 3),
+                                                          const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 12),
+                                                          const SizedBox(width: 2.5),
                                                           Text(
                                                             rating.toStringAsFixed(1),
                                                             style: const TextStyle(
                                                               color: Color(0xFF92400E),
-                                                              fontSize: 11,
+                                                              fontSize: 10.5,
                                                               fontWeight: FontWeight.w800,
                                                             ),
                                                           ),
@@ -950,46 +950,46 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                     ),
                                                   ],
                                                 ),
-                                                const SizedBox(height: 3),
+                                                const SizedBox(height: 2),
                                                 Text(
                                                   headline,
                                                   style: TextStyle(
                                                     color: isLight ? const Color(0xFF475569) : Colors.grey.shade400,
-                                                    fontSize: 12,
+                                                    fontSize: 11.5,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
-                                                const SizedBox(height: 6),
+                                                const SizedBox(height: 4),
                                                 Wrap(
-                                                  spacing: 6,
-                                                  runSpacing: 4,
+                                                  spacing: 5,
+                                                  runSpacing: 3,
                                                   children: [
                                                     // Status tag
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                                       decoration: BoxDecoration(
                                                         color: statusColor.withValues(alpha: 0.12),
-                                                        borderRadius: BorderRadius.circular(6),
+                                                        borderRadius: BorderRadius.circular(5),
                                                       ),
                                                       child: Row(
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
                                                           Container(
-                                                            width: 5,
-                                                            height: 5,
+                                                            width: 4.5,
+                                                            height: 4.5,
                                                             decoration: BoxDecoration(
                                                               color: statusColor,
                                                               shape: BoxShape.circle,
                                                             ),
                                                           ),
-                                                          const SizedBox(width: 4),
+                                                          const SizedBox(width: 3.5),
                                                           Text(
                                                             statusText,
                                                             style: TextStyle(
                                                               color: statusColor,
-                                                              fontSize: 10,
+                                                              fontSize: 9.5,
                                                               fontWeight: FontWeight.w700,
                                                             ),
                                                           ),
@@ -998,32 +998,32 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                     ),
                                                     if (hasLanguageMatch)
                                                       Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                                         decoration: BoxDecoration(
                                                           color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                                                          borderRadius: BorderRadius.circular(6),
+                                                          borderRadius: BorderRadius.circular(5),
                                                         ),
                                                         child: Text(
                                                           '${matchingLangs.first} Match 🌟',
                                                           style: const TextStyle(
                                                             color: Color(0xFFD97706),
-                                                            fontSize: 10,
+                                                            fontSize: 9.5,
                                                             fontWeight: FontWeight.w700,
                                                           ),
                                                         ),
                                                       )
                                                     else
                                                       Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                                         decoration: BoxDecoration(
                                                           color: isLight ? const Color(0xFFEFF6FF) : Colors.white10,
-                                                          borderRadius: BorderRadius.circular(6),
+                                                          borderRadius: BorderRadius.circular(5),
                                                         ),
                                                         child: Text(
                                                           languages,
                                                           style: TextStyle(
                                                             color: isLight ? const Color(0xFF2563EB) : Colors.white70,
-                                                            fontSize: 10,
+                                                            fontSize: 9.5,
                                                             fontWeight: FontWeight.w600,
                                                           ),
                                                         ),
@@ -1036,7 +1036,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                         ],
                                       ),
 
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 8),
 
                                       // Divider
                                       Divider(
@@ -1044,7 +1044,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                         color: isLight ? const Color(0xFFE2E8F0) : Colors.white.withValues(alpha: 0.06),
                                       ),
 
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 8),
 
                                       // Bottom Actions: Price + Audio/Video Call Buttons
                                       Row(
@@ -1059,7 +1059,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                   Text(
                                                     '₹${rate.toStringAsFixed(0)}',
                                                     style: TextStyle(
-                                                      fontSize: 19,
+                                                      fontSize: 17,
                                                       fontWeight: FontWeight.w900,
                                                       color: isLight ? const Color(0xFF0F172A) : Colors.white,
                                                     ),
@@ -1067,7 +1067,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                   Text(
                                                     '/min',
                                                     style: TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       fontWeight: FontWeight.w600,
                                                       color: isLight ? const Color(0xFF64748B) : Colors.grey.shade400,
                                                     ),
@@ -1077,7 +1077,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                               Text(
                                                 'Video: ₹${videoRate.toStringAsFixed(0)}/min',
                                                 style: TextStyle(
-                                                  fontSize: 10,
+                                                  fontSize: 9.5,
                                                   color: isLight ? const Color(0xFF64748B) : Colors.grey.shade400,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -1106,7 +1106,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                               );
                                             },
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
                                               decoration: BoxDecoration(
                                                 gradient: isOnline
                                                     ? const LinearGradient(
@@ -1114,7 +1114,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                       )
                                                     : null,
                                                 color: isOnline ? null : (isLight ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius: BorderRadius.circular(10),
                                                 border: isOnline
                                                     ? null
                                                     : Border.all(
@@ -1123,9 +1123,9 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                 boxShadow: isOnline
                                                     ? [
                                                         BoxShadow(
-                                                          color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                                                          blurRadius: 8,
-                                                          offset: const Offset(0, 3),
+                                                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                                          blurRadius: 6,
+                                                          offset: const Offset(0, 2),
                                                         ),
                                                       ]
                                                     : [],
@@ -1136,14 +1136,14 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                   Icon(
                                                     isOnline ? Icons.call_rounded : Icons.phone_disabled_rounded,
                                                     color: isOnline ? Colors.white : const Color(0xFF64748B),
-                                                    size: 15,
+                                                    size: 14,
                                                   ),
-                                                  const SizedBox(width: 5),
+                                                  const SizedBox(width: 4),
                                                   Text(
                                                     isOnline ? 'Call' : 'Offline',
                                                     style: TextStyle(
                                                       color: isOnline ? Colors.white : const Color(0xFF64748B),
-                                                      fontSize: 13,
+                                                      fontSize: 12,
                                                       fontWeight: FontWeight.w800,
                                                     ),
                                                   ),
@@ -1152,7 +1152,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                             ),
                                           ),
 
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 7),
 
                                           // Video Call
                                           GestureDetector(
@@ -1174,12 +1174,12 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                               );
                                             },
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
                                               decoration: BoxDecoration(
                                                 color: isOnline
                                                     ? (isLight ? const Color(0xFFEFF6FF) : const Color(0xFF1E293B))
                                                     : (isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius: BorderRadius.circular(10),
                                                 border: Border.all(
                                                   color: isOnline
                                                       ? (isLight ? const Color(0xFF93C5FD) : const Color(0xFF3B82F6).withValues(alpha: 0.3))
@@ -1192,14 +1192,14 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                                   Icon(
                                                     isOnline ? Icons.videocam_rounded : Icons.videocam_off_rounded,
                                                     color: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
-                                                    size: 16,
+                                                    size: 15,
                                                   ),
-                                                  const SizedBox(width: 4),
+                                                  const SizedBox(width: 3.5),
                                                   Text(
                                                     'Video',
                                                     style: TextStyle(
                                                       color: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
-                                                      fontSize: 12,
+                                                      fontSize: 11.5,
                                                       fontWeight: FontWeight.w700,
                                                     ),
                                                   ),
