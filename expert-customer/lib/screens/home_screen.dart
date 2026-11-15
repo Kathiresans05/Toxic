@@ -733,7 +733,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   '$creatorName is taking a break and not taking live calls right now. You can get notified as soon as they come online!',
                   style: TextStyle(
                     fontSize: 13.5,
-                    color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                    color: isDark
+                        ? Colors.grey.shade400
+                        : const Color(0xFF64748B),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
@@ -750,27 +752,45 @@ class _HomeScreenState extends State<HomeScreen> {
                       SnackBar(
                         content: Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text('🔔 We will notify you when $creatorName comes online!'),
+                              child: Text(
+                                '🔔 We will notify you when $creatorName comes online!',
+                              ),
                             ),
                           ],
                         ),
                         backgroundColor: const Color(0xFF7C3AED),
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 18),
+                  icon: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Notify Me When Online 🔔',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C3AED),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -789,14 +809,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.phone_in_talk_rounded, color: Color(0xFF10B981), size: 18),
+                  icon: const Icon(
+                    Icons.phone_in_talk_rounded,
+                    color: Color(0xFF10B981),
+                    size: 18,
+                  ),
                   label: const Text(
                     'Browse Active Online Experts 🟢',
-                    style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w800, fontSize: 13.5),
+                    style: TextStyle(
+                      color: Color(0xFF10B981),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    side: const BorderSide(
+                      color: Color(0xFF10B981),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -921,7 +954,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        color: isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
@@ -1059,7 +1094,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       icon: Icon(
-                        isOnline ? Icons.phone_in_talk_rounded : Icons.phone_disabled_rounded,
+                        isOnline
+                            ? Icons.phone_in_talk_rounded
+                            : Icons.phone_disabled_rounded,
                         color: Colors.white,
                         size: 18,
                       ),
@@ -1084,7 +1121,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        backgroundColor: isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -1116,7 +1155,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       icon: Icon(
-                        isOnline ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                        isOnline
+                            ? Icons.videocam_rounded
+                            : Icons.videocam_off_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
@@ -1141,7 +1182,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+                        backgroundColor: isOnline
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFF94A3B8),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -1232,7 +1275,8 @@ class _HomeScreenState extends State<HomeScreen> {
               expert['avatar'] ??
               '';
           final firstName = name.toString().split(' ').first;
-          final isOnline = expert['available'] == true || expert['isOnline'] == true;
+          final isOnline =
+              expert['available'] == true || expert['isOnline'] == true;
 
           return GestureDetector(
             onTap: () => _showExpertQuickCallSheet(context, expert),
@@ -1648,8 +1692,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isOnline
                             ? null
                             : (isDark
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFFF1F5F9)),
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(16),
                         border: isOnline
                             ? null
@@ -1728,8 +1772,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isOnline
                             ? null
                             : (isDark
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFFF1F5F9)),
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(16),
                         border: isOnline
                             ? null
