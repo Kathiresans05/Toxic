@@ -75,6 +75,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final sortedOnlineExperts = List<dynamic>.from(_onlineExperts);
     sortedOnlineExperts.sort((a, b) {
+      final isOnlineA = a['available'] == true || a['isOnline'] == true;
+      final isOnlineB = b['available'] == true || b['isOnline'] == true;
+      if (isOnlineA != isOnlineB) {
+        return isOnlineA ? -1 : 1;
+      }
+
       final langsA =
           (a['languages'] as List<dynamic>?)
               ?.map((l) => l.toString().toLowerCase())
@@ -666,6 +672,141 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showOfflineCreatorModal(BuildContext context, String creatorName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF131823) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('🌙', style: TextStyle(fontSize: 32)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '$creatorName is Currently Offline',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  letterSpacing: -0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                child: Text(
+                  '$creatorName is taking a break and not taking live calls right now. You can get notified as soon as they come online!',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('🔔 We will notify you when $creatorName comes online!'),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFF7C3AED),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Notify Me When Online 🔔',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchExpertsScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.phone_in_talk_rounded, color: Color(0xFF10B981), size: 18),
+                  label: const Text(
+                    'Browse Active Online Experts 🟢',
+                    style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w800, fontSize: 13.5),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showExpertQuickCallSheet(
     BuildContext context,
     Map<String, dynamic> expert,
@@ -697,6 +838,7 @@ class _HomeScreenState extends State<HomeScreen> {
         : (user['id']?.toString() ?? '');
     final languages =
         (expert['languages'] as List<dynamic>?)?.join(', ') ?? 'Tamil, English';
+    final isOnline = expert['available'] == true || expert['isOnline'] == true;
 
     showModalBottomSheet(
       context: context,
@@ -771,7 +913,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
+                        color: isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
@@ -890,6 +1032,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
+                        if (!isOnline) {
+                          _showOfflineCreatorModal(context, name);
+                          return;
+                        }
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -902,17 +1048,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(
-                        Icons.phone_in_talk_rounded,
+                      icon: Icon(
+                        isOnline ? Icons.phone_in_talk_rounded : Icons.phone_disabled_rounded,
                         color: Colors.white,
                         size: 18,
                       ),
                       label: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Audio Call',
-                            style: TextStyle(
+                          Text(
+                            isOnline ? 'Audio Call' : 'Offline',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -928,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
+                        backgroundColor: isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -943,6 +1089,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
+                        if (!isOnline) {
+                          _showOfflineCreatorModal(context, name);
+                          return;
+                        }
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -955,17 +1105,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(
-                        Icons.videocam_rounded,
+                      icon: Icon(
+                        isOnline ? Icons.videocam_rounded : Icons.videocam_off_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
                       label: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Video Call',
-                            style: TextStyle(
+                          Text(
+                            isOnline ? 'Video Call' : 'Offline',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -981,7 +1131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -1072,6 +1222,7 @@ class _HomeScreenState extends State<HomeScreen> {
               expert['avatar'] ??
               '';
           final firstName = name.toString().split(' ').first;
+          final isOnline = expert['available'] == true || expert['isOnline'] == true;
 
           return GestureDetector(
             onTap: () => _showExpertQuickCallSheet(context, expert),
@@ -1135,7 +1286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      // Live green status dot on bottom right (Image 2 style)
+                      // Live green / offline grey status dot on bottom right (Image 2 style)
                       Positioned(
                         right: 1,
                         bottom: 1,
@@ -1143,7 +1294,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 14,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
+                            color: isOnline
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF94A3B8),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isDark
@@ -1252,6 +1405,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Tamil, English';
         final tier = (expert['tier'] ?? 'STANDARD').toString().toUpperCase();
         final isElite = tier == 'ELITE';
+        final isOnline = expert['available'] == true || expert['isOnline'] == true;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -1321,7 +1475,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 13,
                       height: 13,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
+                        color: isOnline
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
@@ -1378,7 +1534,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1411,23 +1570,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Text(
                           '₹${rate.toStringAsFixed(0)}/min',
-                          style: const TextStyle(
-                            color: Color(0xFF10B981),
+                          style: TextStyle(
+                            color: isOnline
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF94A3B8),
                             fontWeight: FontWeight.w900,
                             fontSize: 12.5,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            '• $languages',
-                            style: TextStyle(color: textSubColor, fontSize: 11),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          '• $languages',
+                          style: TextStyle(color: textSubColor, fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1437,9 +1594,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 10),
               // Call action buttons
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   InkWell(
                     onTap: () {
+                      if (!isOnline) {
+                        _showOfflineCreatorModal(context, name);
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -1459,33 +1621,55 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 9,
                       ),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        ),
+                        gradient: isOnline
+                            ? const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                              )
+                            : null,
+                        color: isOnline
+                            ? null
+                            : (isDark
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF10B981,
-                            ).withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        border: isOnline
+                            ? null
+                            : Border.all(
+                                color: isDark
+                                    ? Colors.white12
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                        boxShadow: isOnline
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.call_rounded,
-                            color: Colors.white,
+                            isOnline
+                                ? Icons.call_rounded
+                                : Icons.phone_disabled_rounded,
+                            color: isOnline
+                                ? Colors.white
+                                : const Color(0xFF94A3B8),
                             size: 14,
                           ),
-                          SizedBox(width: 5),
+                          const SizedBox(width: 5),
                           Text(
-                            'Call',
+                            isOnline ? 'Call' : 'Offline',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: isOnline
+                                  ? Colors.white
+                                  : const Color(0xFF94A3B8),
                               fontWeight: FontWeight.w800,
                               fontSize: 12.5,
                             ),
@@ -1497,6 +1681,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 6),
                   InkWell(
                     onTap: () {
+                      if (!isOnline) {
+                        _showOfflineCreatorModal(context, name);
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -1513,23 +1701,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                        ),
+                        gradient: isOnline
+                            ? const LinearGradient(
+                                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                              )
+                            : null,
+                        color: isOnline
+                            ? null
+                            : (isDark
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF6366F1,
-                            ).withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        border: isOnline
+                            ? null
+                            : Border.all(
+                                color: isDark
+                                    ? Colors.white12
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                        boxShadow: isOnline
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF6366F1,
+                                  ).withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
                       ),
-                      child: const Icon(
-                        Icons.videocam_rounded,
-                        color: Colors.white,
+                      child: Icon(
+                        isOnline
+                            ? Icons.videocam_rounded
+                            : Icons.videocam_off_rounded,
+                        color: isOnline
+                            ? Colors.white
+                            : const Color(0xFF94A3B8),
                         size: 16,
                       ),
                     ),

@@ -83,6 +83,138 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
     }
   }
 
+  void _showOfflineCreatorModal(BuildContext context, String creatorName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF131823) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('🌙', style: TextStyle(fontSize: 32)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '$creatorName is Currently Offline',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  letterSpacing: -0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                child: Text(
+                  '$creatorName is taking a break and not taking live calls right now. You can get notified as soon as they come online!',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('🔔 We will notify you when $creatorName comes online!'),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFF7C3AED),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Notify Me When Online 🔔',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _selectedStatus = 'Online 🟢';
+                    });
+                  },
+                  icon: const Icon(Icons.phone_in_talk_rounded, color: Color(0xFF10B981), size: 18),
+                  label: const Text(
+                    'Browse Active Online Experts 🟢',
+                    style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w800, fontSize: 13.5),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _openFilterModal(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     showModalBottomSheet(
@@ -940,6 +1072,10 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                           // Audio Call
                                           GestureDetector(
                                             onTap: () {
+                                              if (!isOnline) {
+                                                _showOfflineCreatorModal(context, name);
+                                                return;
+                                              }
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
@@ -955,27 +1091,41 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
                                               decoration: BoxDecoration(
-                                                gradient: const LinearGradient(
-                                                  colors: [Color(0xFF059669), Color(0xFF10B981)],
-                                                ),
+                                                gradient: isOnline
+                                                    ? const LinearGradient(
+                                                        colors: [Color(0xFF059669), Color(0xFF10B981)],
+                                                      )
+                                                    : null,
+                                                color: isOnline ? null : (isLight ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
                                                 borderRadius: BorderRadius.circular(12),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                                                    blurRadius: 8,
-                                                    offset: const Offset(0, 3),
-                                                  ),
-                                                ],
+                                                border: isOnline
+                                                    ? null
+                                                    : Border.all(
+                                                        color: isLight ? const Color(0xFFCBD5E1) : Colors.white24,
+                                                      ),
+                                                boxShadow: isOnline
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                                          blurRadius: 8,
+                                                          offset: const Offset(0, 3),
+                                                        ),
+                                                      ]
+                                                    : [],
                                               ),
-                                              child: const Row(
+                                              child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.call_rounded, color: Colors.white, size: 15),
-                                                  SizedBox(width: 5),
+                                                  Icon(
+                                                    isOnline ? Icons.call_rounded : Icons.phone_disabled_rounded,
+                                                    color: isOnline ? Colors.white : const Color(0xFF64748B),
+                                                    size: 15,
+                                                  ),
+                                                  const SizedBox(width: 5),
                                                   Text(
-                                                    'Call',
+                                                    isOnline ? 'Call' : 'Offline',
                                                     style: TextStyle(
-                                                      color: Colors.white,
+                                                      color: isOnline ? Colors.white : const Color(0xFF64748B),
                                                       fontSize: 13,
                                                       fontWeight: FontWeight.w800,
                                                     ),
@@ -990,6 +1140,10 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                           // Video Call
                                           GestureDetector(
                                             onTap: () {
+                                              if (!isOnline) {
+                                                _showOfflineCreatorModal(context, name);
+                                                return;
+                                              }
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
@@ -1005,21 +1159,29 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
                                               decoration: BoxDecoration(
-                                                color: isLight ? const Color(0xFFEFF6FF) : const Color(0xFF1E293B),
+                                                color: isOnline
+                                                    ? (isLight ? const Color(0xFFEFF6FF) : const Color(0xFF1E293B))
+                                                    : (isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
                                                 borderRadius: BorderRadius.circular(12),
                                                 border: Border.all(
-                                                  color: isLight ? const Color(0xFF93C5FD) : const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                                                  color: isOnline
+                                                      ? (isLight ? const Color(0xFF93C5FD) : const Color(0xFF3B82F6).withValues(alpha: 0.3))
+                                                      : (isLight ? const Color(0xFFE2E8F0) : Colors.white12),
                                                 ),
                                               ),
-                                              child: const Row(
+                                              child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.videocam_rounded, color: Color(0xFF2563EB), size: 16),
-                                                  SizedBox(width: 4),
+                                                  Icon(
+                                                    isOnline ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                                                    color: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+                                                    size: 16,
+                                                  ),
+                                                  const SizedBox(width: 4),
                                                   Text(
                                                     'Video',
                                                     style: TextStyle(
-                                                      color: Color(0xFF2563EB),
+                                                      color: isOnline ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
                                                       fontSize: 12,
                                                       fontWeight: FontWeight.w700,
                                                     ),

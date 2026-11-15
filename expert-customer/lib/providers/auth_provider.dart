@@ -233,7 +233,6 @@ class AuthProvider extends ChangeNotifier {
       await refreshProfile();
     } else {
       _user ??= {};
-      final String uid = _user!['id'] ?? _user!['uid'] ?? 'cust_1';
       final currentBalance =
           double.tryParse(_user!['walletBalance']?.toString() ?? '0') ?? 0.0;
       final newBalance = currentBalance + amount;

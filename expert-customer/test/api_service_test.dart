@@ -21,16 +21,16 @@ void main() {
       expect(apiService.client.options.headers['Content-Type'], 'application/json');
     });
 
-    test('sendOtp returns false gracefully on network failure without throwing unhandled exception', () async {
-      final result = await apiService.sendOtp('9999999999');
-      // When backend is offline, error is caught and returns false
-      expect(result, isFalse);
+    test('getProfile returns null gracefully on network failure without throwing unhandled exception', () async {
+      final result = await apiService.getProfile();
+      // When backend is offline/unauthenticated, error is caught and returns null
+      expect(result, isNull);
     });
 
-    test('verifyOtp returns null gracefully on network failure without throwing unhandled exception', () async {
-      final result = await apiService.verifyOtp('9999999999', '1234');
-      // When backend is offline, error is caught and returns null
-      expect(result, isNull);
+    test('getCallHistory returns empty list gracefully on network failure', () async {
+      final result = await apiService.getCallHistory();
+      // When backend is offline, error is caught and returns empty list
+      expect(result, isEmpty);
     });
 
     test('getOnlineExperts returns empty list gracefully on network failure', () async {
