@@ -41,11 +41,15 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
   List<dynamic> _experts = [];
   bool _isLoading = true;
   StreamSubscription? _expertsSub;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchExperts();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) _fetchExperts(isBackground: true);
+    });
     _searchController.addListener(() {
       setState(() {});
     });
@@ -53,12 +57,13 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _expertsSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchExperts() async {
+  Future<void> _fetchExperts({bool isBackground = false}) async {
     _expertsSub?.cancel();
     try {
       final apiList = await _apiService.getOnlineExperts();
@@ -70,7 +75,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
       }
     } catch (e) {
       debugPrint('API fetch experts error: $e');
-      if (mounted) {
+      if (mounted && !isBackground) {
         setState(() {
           _isLoading = false;
         });
@@ -542,68 +547,77 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
           ),
 
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
-                : filtered.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+            child: RefreshIndicator(
+              onRefresh: _fetchExperts,
+              color: const Color(0xFF7C3AED),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                  : filtered.isEmpty
+                      ? Center(
+                          child: ListView(
+                            shrinkWrap: true,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
+                              Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.person_search_rounded, size: 48, color: Color(0xFF7C3AED)),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'No experts found',
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'Try clearing filters or search for another keyword',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextButton.icon(
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: const Color(0xFF7C3AED),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchController.clear();
+                                          _selectedFilter = 'All';
+                                          _selectedStatus = 'All Status';
+                                          _selectedLanguage = 'All Languages';
+                                        });
+                                      },
+                                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                                      label: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
                                 ),
-                                child: const Icon(Icons.person_search_rounded, size: 48, color: Color(0xFF7C3AED)),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'No experts found',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Try clearing filters or search for another keyword',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  backgroundColor: const Color(0xFF7C3AED),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _selectedFilter = 'All';
-                                    _selectedStatus = 'All Status';
-                                    _selectedLanguage = 'All Languages';
-                                  });
-                                },
-                                icon: const Icon(Icons.refresh_rounded, size: 16),
-                                label: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
                           final expert = filtered[index];
                           final user = expert['user'] is Map ? expert['user'] : {};
                           final name = user['fullName'] ?? user['name'] ?? expert['name'] ?? 'Expert';
@@ -1024,6 +1038,7 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                           );
                         },
                       ),
+            ),
           ),
         ],
       ),
