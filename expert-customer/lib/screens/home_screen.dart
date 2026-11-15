@@ -86,47 +86,76 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await authProvider.refreshProfile();
-          await _fetchExperts();
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildRoyalPurpleTopSection(context, name, isVip, balance, topPadding),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                    _buildFeaturedExpertsHorizontal(context, sortedOnlineExperts),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader(context, 'Available Online Experts 🟢', onSeeAll: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                    _buildRealtimeExpertList(context, sortedOnlineExperts),
-                    const SizedBox(height: 30),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // Luxury Eye-friendly Soft Pastel Sunset Gradient Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)],
+                      )
+                    : const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFEDE9FE), // Soft Lavender
+                          Color(0xFFF5D0FE), // Gentle Blushed Orchid
+                          Color(0xFFFFE4E6), // Soft Rosé Petal
+                          Color(0xFFFFEDD5), // Soft Peach Sunset
+                          Color(0xFFFEF3C7), // Gentle Golden Glow
+                        ],
+                        stops: [0.0, 0.25, 0.50, 0.75, 1.0],
+                      ),
               ),
-            ],
+            ),
           ),
-        ),
+          RefreshIndicator(
+            onRefresh: () async {
+              await authProvider.refreshProfile();
+              await _fetchExperts();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildRoyalPurpleTopSection(context, name, isVip, balance, topPadding),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(context, 'Top Featured Experts 🔥', onSeeAll: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                        _buildFeaturedExpertsHorizontal(context, sortedOnlineExperts),
+                        const SizedBox(height: 24),
+                        _buildSectionHeader(context, 'Available Online Experts 🟢', onSeeAll: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                        _buildRealtimeExpertList(context, sortedOnlineExperts),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -769,6 +798,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  LinearGradient _getAvatarGradient(String name) {
+    final lower = name.trim().toLowerCase();
+    int hash = 0;
+    for (int i = 0; i < lower.length; i++) {
+      hash = (hash * 31 + lower.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    final index = hash % 6;
+    switch (index) {
+      case 0:
+        return const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFFB7185)]); // Rose / Coral
+      case 1:
+        return const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFFA855F7)]); // Purple / Violet
+      case 2:
+        return const LinearGradient(colors: [Color(0xFF0284C7), Color(0xFF38BDF8)]); // Ocean / Cyan
+      case 3:
+        return const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFFBBF24)]); // Warm Amber / Gold
+      case 4:
+        return const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF818CF8)]); // Royal Indigo / Blue
+      default:
+        return const LinearGradient(colors: [Color(0xFF0D9488), Color(0xFF2DD4BF)]); // Teal / Turquoise
+    }
+  }
+
   Widget _buildFeaturedExpertsHorizontal(BuildContext context, List<dynamic> sortedExperts) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
@@ -807,19 +859,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Stack(
                     children: [
-                      // Gradient Border Ring (Image 2 style)
+                      // Gradient Border Ring
                       Container(
                         padding: const EdgeInsets.all(2.8),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          gradient: _getAvatarGradient(name),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                              color: Colors.black.withValues(alpha: 0.12),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -828,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            color: isDark ? const Color(0xFF0F172A) : Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: CircleAvatar(
@@ -836,12 +884,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                             backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
                             child: avatar.isEmpty
-                                ? Text(
-                                    name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                                    style: const TextStyle(
-                                      color: Color(0xFF2563EB),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
+                                ? Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: _getAvatarGradient(name),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 18,
+                                        ),
+                                      ),
                                     ),
                                   )
                                 : null,
@@ -955,12 +1011,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(2.5),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF10B981)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                    decoration: BoxDecoration(
+                      gradient: _getAvatarGradient(name),
                       shape: BoxShape.circle,
                     ),
                     child: CircleAvatar(
@@ -968,12 +1020,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                       backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
                       child: avatar.isEmpty
-                          ? Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                              style: const TextStyle(
-                                color: Color(0xFF6366F1),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20,
+                          ? Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: _getAvatarGradient(name),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                  ),
+                                ),
                               ),
                             )
                           : null,
@@ -1067,9 +1127,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          '• $languages',
-                          style: TextStyle(color: textSubColor, fontSize: 11),
+                        Flexible(
+                          child: Text(
+                            '• $languages',
+                            style: TextStyle(color: textSubColor, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),

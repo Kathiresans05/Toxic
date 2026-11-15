@@ -114,6 +114,29 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     return '$m min ${remainingS}s';
   }
 
+  LinearGradient _getAvatarGradient(String name) {
+    final lower = name.trim().toLowerCase();
+    int hash = 0;
+    for (int i = 0; i < lower.length; i++) {
+      hash = (hash * 31 + lower.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    final index = hash % 6;
+    switch (index) {
+      case 0:
+        return const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFFB7185)]); // Rose / Coral
+      case 1:
+        return const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFFA855F7)]); // Purple / Violet
+      case 2:
+        return const LinearGradient(colors: [Color(0xFF0284C7), Color(0xFF38BDF8)]); // Ocean / Cyan
+      case 3:
+        return const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFFBBF24)]); // Warm Amber / Gold
+      case 4:
+        return const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF818CF8)]); // Royal Indigo / Blue
+      default:
+        return const LinearGradient(colors: [Color(0xFF0D9488), Color(0xFF2DD4BF)]); // Teal / Turquoise
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -122,31 +145,51 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     final borderColor = isDark ? Colors.white12 : AppTheme.lightCardBorder;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Calls & Favorites', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text('Calls & Favorites', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white)),
         centerTitle: false,
         elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF312E81)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50),
+          preferredSize: const Size.fromHeight(54),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.all(3.5),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                color: AppTheme.primary,
+                borderRadius: BorderRadius.circular(22),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
-              labelColor: Colors.black,
-              unselectedLabelColor: isDark ? Colors.white70 : Colors.black54,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
               tabs: const [
                 Tab(
                   child: Row(
@@ -162,7 +205,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.favorite_rounded, size: 16, color: Colors.redAccent),
+                      Icon(Icons.favorite_rounded, size: 16, color: Color(0xFFFB7185)),
                       SizedBox(width: 6),
                       Text('Saved Favorites'),
                     ],
@@ -173,15 +216,44 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadAllData,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildCallHistoryTab(isDark, textColor, cardBg, borderColor),
-            _buildFavoritesTab(isDark, textColor, cardBg, borderColor),
-          ],
-        ),
+      body: Stack(
+        children: [
+          // Luxury Eye-friendly Soft Pastel Sunset Gradient Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)],
+                      )
+                    : const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFEDE9FE), // Soft Lavender
+                          Color(0xFFF5D0FE), // Gentle Blushed Orchid
+                          Color(0xFFFFE4E6), // Soft Rosé Petal
+                          Color(0xFFFFEDD5), // Soft Peach Sunset
+                          Color(0xFFFEF3C7), // Gentle Golden Glow
+                        ],
+                        stops: [0.0, 0.25, 0.50, 0.75, 1.0],
+                      ),
+              ),
+            ),
+          ),
+          RefreshIndicator(
+            onRefresh: _loadAllData,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildCallHistoryTab(isDark, textColor, cardBg, borderColor),
+                _buildFavoritesTab(isDark, textColor, cardBg, borderColor),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -402,29 +474,42 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
+            color: isDark ? const Color(0xFF131823) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF4338CA).withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Row(
             children: [
               Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppTheme.primary.withValues(alpha: 0.25),
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 17),
+                  Container(
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: BoxDecoration(
+                      gradient: _getAvatarGradient(name),
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: _getAvatarGradient(name),
+                        ),
+                        child: Center(
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                            style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 17),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -436,7 +521,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                       decoration: BoxDecoration(
                         color: isAvailable ? const Color(0xFF10B981) : Colors.grey,
                         shape: BoxShape.circle,
-                        border: Border.all(color: cardBg, width: 2),
+                        border: Border.all(color: isDark ? const Color(0xFF131823) : Colors.white, width: 2),
                       ),
                     ),
                   )

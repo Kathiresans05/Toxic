@@ -33,11 +33,38 @@ class UserProfileScreen extends StatelessWidget {
     final iconColor = isDark ? Colors.white70 : AppTheme.lightTextSecondary;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      body: Stack(
+        children: [
+          // Luxury Eye-friendly Soft Pastel Sunset Gradient Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)],
+                      )
+                    : const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFEDE9FE), // Soft Lavender
+                          Color(0xFFF5D0FE), // Gentle Blushed Orchid
+                          Color(0xFFFFE4E6), // Soft Rosé Petal
+                          Color(0xFFFFEDD5), // Soft Peach Sunset
+                          Color(0xFFFEF3C7), // Gentle Golden Glow
+                        ],
+                        stops: [0.0, 0.25, 0.50, 0.75, 1.0],
+                      ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
               // Header Card
               Container(
                 width: double.infinity,
@@ -332,6 +359,8 @@ class UserProfileScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }
