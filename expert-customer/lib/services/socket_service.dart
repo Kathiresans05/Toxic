@@ -16,6 +16,7 @@ class SocketService {
   Function(Map<String, dynamic>)? onIncomingCall;
   Function(Map<String, dynamic>)? onLowBalance;
   Function(Map<String, dynamic>)? onReceiveMessage;
+  Function(Map<String, dynamic>)? onCreatorStatusChanged;
 
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
@@ -101,6 +102,9 @@ class SocketService {
         break;
       case 'RECEIVE_MESSAGE':
         onReceiveMessage?.call(msg);
+        break;
+      case 'CREATOR_STATUS_CHANGED':
+        onCreatorStatusChanged?.call(msg);
         break;
     }
   }

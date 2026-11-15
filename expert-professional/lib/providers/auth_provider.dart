@@ -51,6 +51,7 @@ class AuthProvider extends ChangeNotifier {
             'audioRate': profile['audioRatePerMin'] ?? 10.0,
             'videoRate': profile['videoRatePerMin'] ?? 20.0,
             'isApproved': profile['approved'] ?? false,
+            'isOnline': profile['available'] == true,
           };
           _socketService.connect(userId);
         } else {
@@ -192,6 +193,7 @@ class AuthProvider extends ChangeNotifier {
             'audioRate': profile['audioRatePerMin'] ?? 10.0,
             'videoRate': profile['videoRatePerMin'] ?? 20.0,
             'isApproved': profile['approved'] ?? false,
+            'isOnline': profile['available'] == true,
           };
           notifyListeners();
         }

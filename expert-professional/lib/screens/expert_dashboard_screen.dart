@@ -169,6 +169,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     });
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final expertId = authProvider.user?['id']?.toString();
+    final userPhone = authProvider.user?['phone']?.toString();
 
     if (value) {
       await ForegroundService().startOnlineService();
@@ -180,8 +181,16 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
     }
 
     try {
-      await ApiService().toggleExpertStatus(value);
-    } catch (_) {}
+      final res = await ApiService().toggleExpertStatus(
+        value,
+        expertId: expertId,
+        userId: expertId,
+        phoneNumber: userPhone,
+      );
+      debugPrint('Creator toggle status updated on server: $res');
+    } catch (e) {
+      debugPrint('Creator toggle status error: $e');
+    }
     if (mounted) {
       authProvider.refreshProfile();
     }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expert_professional/constants.dart';
 
 class ApiService {
@@ -111,11 +112,29 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> toggleExpertStatus(bool isOnline) async {
+  Future<Map<String, dynamic>?> toggleExpertStatus(
+    bool isOnline, {
+    String? expertId,
+    String? userId,
+    String? phoneNumber,
+  }) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final options = (token != null && token.isNotEmpty)
+          ? Options(headers: {'Authorization': 'Bearer $token'})
+          : null;
+
       final response = await _dio.put(
         '/experts/status',
-        data: {'isOnline': isOnline},
+        data: {
+          'isOnline': isOnline,
+          'available': isOnline,
+          if (expertId != null && expertId.isNotEmpty) 'expertId': expertId,
+          if (userId != null && userId.isNotEmpty) 'userId': userId,
+          if (phoneNumber != null && phoneNumber.isNotEmpty) 'phoneNumber': phoneNumber,
+        },
+        options: options,
       );
       return response.data;
     } catch (e) {

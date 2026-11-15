@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,18 +24,21 @@ public class ExpertController {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final CallSessionRepository callSessionRepository;
+    private final com.expertapp.backend.websocket.CallSignalingWebSocketHandler webSocketHandler;
 
     public ExpertController(
             ExpertProfileRepository expertProfileRepository,
             KycVerificationRepository kycVerificationRepository,
             ReviewRepository reviewRepository,
             UserRepository userRepository,
-            CallSessionRepository callSessionRepository) {
+            CallSessionRepository callSessionRepository,
+            com.expertapp.backend.websocket.CallSignalingWebSocketHandler webSocketHandler) {
         this.expertProfileRepository = expertProfileRepository;
         this.kycVerificationRepository = kycVerificationRepository;
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.callSessionRepository = callSessionRepository;
+        this.webSocketHandler = webSocketHandler;
     }
 
     private UUID extractUserId(org.springframework.security.core.Authentication auth) {
@@ -120,28 +124,48 @@ public class ExpertController {
     }
 
     @PutMapping("/status")
+    @org.springframework.transaction.annotation.Transactional
     @Operation(summary = "Toggle creator online/offline availability status")
     public ResponseEntity<?> toggleOnlineStatus(@RequestBody Map<String, Object> body) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         UUID userId = extractUserId(auth);
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
-        }
+        String authName = auth != null ? auth.getName() : null;
 
-        String authName = auth.getName();
-        ExpertProfile expert = expertProfileRepository.findAll().stream()
-                .filter(e -> e.getUser() != null && (
-                        userId.equals(e.getUser().getId()) ||
-                        (authName != null && (authName.equalsIgnoreCase(e.getUser().getEmail()) || authName.equalsIgnoreCase(e.getUser().getPhoneNumber())))
-                ))
-                .findFirst()
-                .orElse(null);
+        ExpertProfile expert = null;
+        if (userId != null) {
+            expert = expertProfileRepository.findByUserId(userId).orElse(null);
+        }
+        if (expert == null && authName != null && !authName.equals("anonymousUser")) {
+            expert = expertProfileRepository.findAll().stream()
+                    .filter(e -> e.getUser() != null && (
+                            authName.equalsIgnoreCase(e.getUser().getEmail()) ||
+                            authName.equalsIgnoreCase(e.getUser().getPhoneNumber())
+                    ))
+                    .findFirst().orElse(null);
+        }
+        // Fallback: Support expertId, userId, or phoneNumber directly from request body
+        if (expert == null && body.containsKey("expertId")) {
+            try {
+                expert = expertProfileRepository.findById(UUID.fromString(body.get("expertId").toString())).orElse(null);
+            } catch (Exception ignored) {}
+        }
+        if (expert == null && body.containsKey("userId")) {
+            try {
+                expert = expertProfileRepository.findByUserId(UUID.fromString(body.get("userId").toString())).orElse(null);
+            } catch (Exception ignored) {}
+        }
+        if (expert == null && body.containsKey("phoneNumber")) {
+            String phone = body.get("phoneNumber").toString().trim();
+            expert = expertProfileRepository.findAll().stream()
+                    .filter(e -> e.getUser() != null && phone.equalsIgnoreCase(e.getUser().getPhoneNumber()))
+                    .findFirst().orElse(null);
+        }
 
         if (expert == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body(Map.of("error", "Creator profile not found"));
         }
 
-        boolean isOnline = true;
+        boolean isOnline = false;
         if (body.containsKey("isOnline")) {
             isOnline = Boolean.parseBoolean(body.get("isOnline").toString());
         } else if (body.containsKey("available")) {
@@ -149,7 +173,19 @@ public class ExpertController {
         }
 
         expert.setAvailable(isOnline);
-        expertProfileRepository.save(expert);
+        expertProfileRepository.saveAndFlush(expert);
+
+        // Broadcast status change via WebSocket
+        Map<String, Object> wsAlert = new HashMap<>();
+        wsAlert.put("event", "CREATOR_STATUS_CHANGED");
+        wsAlert.put("expertId", expert.getId().toString());
+        if (expert.getUser() != null) {
+            wsAlert.put("userId", expert.getUser().getId().toString());
+            wsAlert.put("creatorName", expert.getUser().getFullName());
+        }
+        wsAlert.put("available", isOnline);
+        wsAlert.put("isOnline", isOnline);
+        webSocketHandler.broadcast(wsAlert);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,

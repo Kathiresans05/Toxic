@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:expert_customer/theme/app_theme.dart';
 import 'package:expert_customer/providers/auth_provider.dart';
 import 'package:expert_customer/services/api_service.dart';
+import 'package:expert_customer/services/socket_service.dart';
 import 'package:expert_customer/screens/call_screen.dart';
 import 'package:expert_customer/screens/wallet_screens.dart';
 
@@ -50,6 +51,25 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
     _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) _fetchExperts(isBackground: true);
     });
+
+    SocketService().onCreatorStatusChanged = (data) {
+      if (mounted) {
+        final expertId = data['expertId']?.toString();
+        final userId = data['userId']?.toString();
+        final bool available = data['available'] == true || data['isOnline'] == true;
+        setState(() {
+          for (var exp in _experts) {
+            final eId = exp['id']?.toString();
+            final uId = exp['user'] is Map ? exp['user']['id']?.toString() : null;
+            if (eId == expertId || (userId != null && uId == userId)) {
+              exp['available'] = available;
+              exp['isOnline'] = available;
+            }
+          }
+        });
+      }
+    };
+
     _searchController.addListener(() {
       setState(() {});
     });

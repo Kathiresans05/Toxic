@@ -80,6 +80,22 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public void broadcast(Object messageObject) {
+        try {
+            String json = objectMapper.writeValueAsString(messageObject);
+            TextMessage textMessage = new TextMessage(json);
+            for (WebSocketSession session : userSessions.values()) {
+                if (session != null && session.isOpen()) {
+                    try {
+                        session.sendMessage(textMessage);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Failed to broadcast WebSocket message", ex);
+        }
+    }
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
