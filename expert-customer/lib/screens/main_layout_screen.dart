@@ -38,7 +38,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final navBg = Theme.of(context).scaffoldBackgroundColor;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppTheme.lightCardBorder;
 
     return Scaffold(
       backgroundColor: navBg,
@@ -48,17 +47,30 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: navBg,
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
           border: Border(
-            top: BorderSide(color: borderColor, width: 1.0),
+            top: BorderSide(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFFDE68A),
+              width: 1.2,
+            ),
           ),
-          boxShadow: isDark ? [] : [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFFD97706).withValues(alpha: 0.08),
               blurRadius: 10,
               offset: const Offset(0, -2),
             )
-          ]
+          ],
         ),
         child: SafeArea(
           top: false,
@@ -112,8 +124,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   }) {
     final isSelected = _currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedColor = isDark ? Colors.grey.shade500 : AppTheme.lightTextSecondary;
-    final color = isSelected ? AppTheme.secondary : unselectedColor;
+    final unselectedColor = isDark ? Colors.grey.shade500 : const Color(0xFF64748B);
+    final color = isSelected ? const Color(0xFF7C3AED) : unselectedColor;
     final displayIcon = (isSelected && selectedIcon != null) ? selectedIcon : icon;
 
     return Expanded(

@@ -359,11 +359,11 @@ class _SearchExpertsScreenState extends State<SearchExpertsScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFFEDE9FE), // Soft Lavender
-                    Color(0xFFF5D0FE), // Gentle Blushed Orchid
-                    Color(0xFFFFE4E6), // Soft Rosé Petal
-                    Color(0xFFFFEDD5), // Soft Peach Sunset
-                    Color(0xFFFEF3C7), // Gentle Golden Glow
+                    Color(0xFFDDD6FE), // Soft Lavender
+                    Color(0xFFF0ABFC), // Blushed Orchid Pink
+                    Color(0xFFFDA4AF), // Soft Coral Rosé
+                    Color(0xFFFDBA74), // Warm Sunset Peach
+                    Color(0xFFFCD34D), // Warm Amber Glow
                   ],
                   stops: [0.0, 0.25, 0.50, 0.75, 1.0],
                 ),
