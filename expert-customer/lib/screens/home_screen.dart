@@ -146,17 +146,17 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? [const Color(0xFF0D051A), const Color(0xFF1E0A3C), const Color(0xFF3B1578)]
-              : [const Color(0xFF1E0A3C), const Color(0xFF3B1578), const Color(0xFF5B21B6)],
+              ? [const Color(0xFF070F1E), const Color(0xFF0F1E36), const Color(0xFF1E3A8A)]
+              : [const Color(0xFF0A1E42), const Color(0xFF1E3A8A), const Color(0xFF2563EB)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B1578).withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
         top: topPadding + 14,
         left: 20,
         right: 20,
-        bottom: 24,
+        bottom: 22,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,16 +182,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+                        colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.45),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -239,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Text(
                         'Chat • Call • Consult',
                         style: TextStyle(
-                          color: Color(0xFFDDD6FE),
+                          color: Color(0xFFBFDBFE),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.3,
@@ -339,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 18),
 
-          // 2. Glassmorphic Hero Consultation Banner (Connecto Style)
+          // 2. Glassmorphic Hero Consultation Banner
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -437,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -446,12 +446,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.phone_in_talk_rounded, size: 16, color: Color(0xFF4C1D95)),
+                        Icon(Icons.phone_in_talk_rounded, size: 16, color: Color(0xFF1E3A8A)),
                         SizedBox(width: 8),
                         Text(
                           'Talk to Expert Now ➔',
                           style: TextStyle(
-                            color: Color(0xFF4C1D95),
+                            color: Color(0xFF1E3A8A),
                             fontSize: 13.5,
                             fontWeight: FontWeight.w900,
                           ),
@@ -461,82 +461,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 3. Integrated Modern Search Bar
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-              );
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF6D28D9),
-                    size: 21,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Search experts, skills, categories...',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : const Color(0xFF64748B),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFEDE9FE),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.tune_rounded,
-                          size: 13,
-                          color: Color(0xFF6D28D9),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Filter',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6D28D9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
