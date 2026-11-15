@@ -28,6 +28,9 @@ export interface CreatorItem {
   email: string;
   phone: string;
   headline: string;
+  bio?: string;
+  experienceYears?: number;
+  agoraUid?: number;
   categoryName?: string;
   tier: 'STANDARD' | 'ELITE';
   audioRatePerMin: number;

@@ -13,6 +13,11 @@ import {
   Wallet,
   Sparkles,
   ChevronDown,
+  Copy,
+  Mail,
+  Eye,
+  User,
+  Calendar,
 } from 'lucide-react';
 import { CreatorItem } from '../types';
 import { api } from '../services/api';
@@ -24,6 +29,16 @@ export const CreatorsList: React.FC = () => {
   const [activeTierFilter, setActiveTierFilter] = useState<'ALL' | 'STANDARD' | 'ELITE'>('ALL');
   const [switchingTierId, setSwitchingTierId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Creator details drawer/modal
+  const [selectedCreatorForDetails, setSelectedCreatorForDetails] = useState<CreatorItem | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(label);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
 
   // Manual rate modal (optional override)
   const [editingCreator, setEditingCreator] = useState<CreatorItem | null>(null);
@@ -232,21 +247,38 @@ export const CreatorsList: React.FC = () => {
                   <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-3.5 px-6">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs ${
-                          c.tier === 'ELITE'
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
+                        <div
+                          onClick={() => setSelectedCreatorForDetails(c)}
+                          className={`w-9 h-9 rounded-full font-bold flex items-center justify-center text-xs shrink-0 cursor-pointer transition-transform hover:scale-105 ${
+                            c.tier === 'ELITE'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
                           {c.fullName.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                          <div
+                            onClick={() => setSelectedCreatorForDetails(c)}
+                            className="font-semibold text-slate-900 flex items-center gap-1.5 cursor-pointer hover:text-blue-600 transition-colors"
+                          >
                             <span>{c.fullName}</span>
                             {c.tier === 'ELITE' && (
                               <span className="text-[10px] font-bold text-amber-600" title="Elite Expert">👑</span>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate max-w-[180px]">{c.headline}</div>
+                          <div className="text-[11px] text-slate-500 font-medium truncate max-w-[200px]">{c.headline}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <Phone className="w-2.5 h-2.5 text-emerald-600" />
+                              {c.phone || 'No Phone'}
+                            </span>
+                            {c.email && (
+                              <span className="text-[10px] text-slate-400 truncate max-w-[150px]" title={c.email}>
+                                {c.email}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -338,6 +370,13 @@ export const CreatorsList: React.FC = () => {
 
                     <td className="py-3.5 px-6 text-right space-x-1.5 whitespace-nowrap">
                       <button
+                        onClick={() => setSelectedCreatorForDetails(c)}
+                        title="View Full Profile & Contact"
+                        className="px-2 py-1 rounded text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                      >
+                        <Eye className="w-3 h-3 inline mr-1" /> Details
+                      </button>
+                      <button
                         onClick={() => handleOpenRateModal(c)}
                         title="Override Custom Rates"
                         className="px-2 py-1 rounded text-xs font-medium text-slate-600 hover:bg-slate-100 border border-slate-200"
@@ -418,6 +457,186 @@ export const CreatorsList: React.FC = () => {
               >
                 {isUpdatingRates && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Save Custom Tariff
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creator Details Drawer/Modal */}
+      {selectedCreatorForDetails && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-full font-bold flex items-center justify-center text-sm shadow-inner ${
+                  selectedCreatorForDetails.tier === 'ELITE'
+                    ? 'bg-amber-100 text-amber-800 border-2 border-amber-400'
+                    : 'bg-blue-100 text-blue-800 border-2 border-blue-300'
+                }`}>
+                  {selectedCreatorForDetails.fullName.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>{selectedCreatorForDetails.fullName}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      selectedCreatorForDetails.tier === 'ELITE'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                        : 'bg-blue-100 text-blue-800 border border-blue-200'
+                    }`}>
+                      {selectedCreatorForDetails.tier === 'ELITE' ? '👑 Elite Expert' : '🔵 Standard Pro'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {selectedCreatorForDetails.headline}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCreatorForDetails(null)}
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Contact Details Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-blue-600" />
+                <span>Contact & Account Identity</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Mobile Number */}
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-emerald-600" /> Mobile Number
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(selectedCreatorForDetails.phone, 'phone')}
+                      className="text-blue-600 hover:text-blue-800 text-[10px] font-bold flex items-center gap-0.5"
+                    >
+                      <Copy className="w-2.5 h-2.5" />
+                      {copiedText === 'phone' ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  <div className="font-mono font-bold text-slate-900 text-sm mt-1">
+                    {selectedCreatorForDetails.phone || 'Not provided'}
+                  </div>
+                </div>
+
+                {/* Email Address */}
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-blue-600" /> Email ID
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(selectedCreatorForDetails.email, 'email')}
+                      className="text-blue-600 hover:text-blue-800 text-[10px] font-bold flex items-center gap-0.5"
+                    >
+                      <Copy className="w-2.5 h-2.5" />
+                      {copiedText === 'email' ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                  <div className="font-semibold text-slate-900 text-xs mt-1 truncate" title={selectedCreatorForDetails.email}>
+                    {selectedCreatorForDetails.email || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio & Experience */}
+              {selectedCreatorForDetails.bio && (
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+                  <div className="text-[10px] text-slate-400 font-medium mb-1">About / Bio</div>
+                  <div className="text-slate-700 italic">"{selectedCreatorForDetails.bio}"</div>
+                </div>
+              )}
+            </div>
+
+            {/* Tariffs & Performance Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs text-center">
+              <div className="bg-blue-50/70 border border-blue-200/80 p-2.5 rounded-xl">
+                <div className="text-[10px] text-blue-600 font-bold uppercase">Audio Rate</div>
+                <div className="text-base font-extrabold text-blue-900 mt-0.5">₹{selectedCreatorForDetails.audioRatePerMin}<span className="text-[10px] font-normal text-slate-500">/m</span></div>
+              </div>
+              <div className="bg-purple-50/70 border border-purple-200/80 p-2.5 rounded-xl">
+                <div className="text-[10px] text-purple-600 font-bold uppercase">Video Rate</div>
+                <div className="text-base font-extrabold text-purple-900 mt-0.5">₹{selectedCreatorForDetails.videoRatePerMin}<span className="text-[10px] font-normal text-slate-500">/m</span></div>
+              </div>
+              <div className="bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl">
+                <div className="text-[10px] text-amber-700 font-bold uppercase">Rating</div>
+                <div className="text-base font-extrabold text-amber-900 mt-0.5">⭐ {selectedCreatorForDetails.ratingAverage.toFixed(1)}</div>
+              </div>
+              <div className="bg-emerald-50/70 border border-emerald-200/80 p-2.5 rounded-xl">
+                <div className="text-[10px] text-emerald-700 font-bold uppercase">Earnings</div>
+                <div className="text-base font-extrabold text-emerald-900 mt-0.5">₹{selectedCreatorForDetails.walletBalance}</div>
+              </div>
+            </div>
+
+            {/* System Info & Status */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-1.5">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-slate-400">KYC Status:</span>
+                <span className="font-semibold text-slate-800">{selectedCreatorForDetails.kycStatus}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-slate-400">Consultation Approval:</span>
+                <span className={`font-bold ${selectedCreatorForDetails.isApproved ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {selectedCreatorForDetails.isApproved ? 'APPROVED' : 'DISABLED'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-slate-400">Registered On:</span>
+                <span className="font-medium text-slate-700">{selectedCreatorForDetails.createdAt}</span>
+              </div>
+              {selectedCreatorForDetails.agoraUid && (
+                <div className="flex items-center justify-between text-slate-600">
+                  <span className="text-slate-400">Agora Stream UID:</span>
+                  <span className="font-mono text-slate-700">{selectedCreatorForDetails.agoraUid}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const creator = selectedCreatorForDetails;
+                  setSelectedCreatorForDetails(null);
+                  handleOpenRateModal(creator);
+                }}
+                className="px-3 py-1.5 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg font-semibold"
+              >
+                <Edit2 className="w-3 h-3 inline mr-1" /> Edit Tariff Rates
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleApproval(selectedCreatorForDetails);
+                  setSelectedCreatorForDetails({
+                    ...selectedCreatorForDetails,
+                    isApproved: !selectedCreatorForDetails.isApproved,
+                  });
+                }}
+                className={`px-3 py-1.5 text-xs rounded-lg font-semibold border ${
+                  selectedCreatorForDetails.isApproved
+                    ? 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                }`}
+              >
+                {selectedCreatorForDetails.isApproved ? 'Revoke Approval' : 'Approve Creator'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCreatorForDetails(null)}
+                className="px-4 py-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold"
+              >
+                Close
               </button>
             </div>
           </div>
