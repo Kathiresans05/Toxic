@@ -118,17 +118,8 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
           callType: callType,
         );
 
-        // Show in-app banner with incoming call controls
-        CallNotificationService().showIncomingCallBanner(
-          context: context,
-          callId: callId,
-          callerName: callerName,
-          channelName: channelName,
-          pricePerMinute: pricePerMinute,
-          callType: callType,
-        );
-
-        // Show full-screen incoming call UI immediately
+        // Clear any old notification banners and show full-screen incoming call UI
+        CallNotificationService().hideBanner();
         Navigator.push(
           context,
           MaterialPageRoute(

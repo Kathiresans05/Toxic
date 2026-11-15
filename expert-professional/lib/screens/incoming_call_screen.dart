@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:expert_professional/screens/call_screen.dart';
 import 'package:expert_professional/services/ringtone_service.dart';
 import 'package:expert_professional/services/call_service.dart';
+import 'package:expert_professional/services/notification_service.dart';
+import 'package:expert_professional/services/socket_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String callId;
@@ -29,11 +31,32 @@ class IncomingCallScreen extends StatefulWidget {
 class _IncomingCallScreenState extends State<IncomingCallScreen> {
   late Timer _waveTimer;
   List<double> _waveFluctuations = List.generate(35, (index) => 10.0 + (index % 3) * 15.0);
+  bool _isActionTaken = false;
 
   @override
   void initState() {
     super.initState();
+    // Dismiss any in-app banner immediately so it never overlaps the full call screen
+    CallNotificationService().hideBanner();
     RingtoneService().startRingtone();
+
+    // Listen for caller cancelling or ending call before answer
+    SocketService().onCallEnded = (data) {
+      if (mounted && !_isActionTaken) {
+        _isActionTaken = true;
+        CallNotificationService().hideBanner();
+        RingtoneService().stopRingtone();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Caller ended the call'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Color(0xFFE53935),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    };
+
     // Simulate real-time fluctuating sound waves
     _waveTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
       if (mounted) {
@@ -49,6 +72,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   @override
   void dispose() {
     _waveTimer.cancel();
+    CallNotificationService().hideBanner();
     RingtoneService().stopRingtone();
     super.dispose();
   }
@@ -130,14 +154,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Relationship • English',
-                    style: TextStyle(color: Color(0xFF8A8A93), fontSize: 16),
+                  Text(
+                    '${widget.callType.toUpperCase()} Call • Consultation',
+                    style: const TextStyle(color: Color(0xFF8A8A93), fontSize: 16),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    '₹ 5 /min',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    '₹ ${widget.pricePerMinute.toStringAsFixed(0)} /min',
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -163,6 +187,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                       icon: const Icon(Icons.call_end, color: Colors.white),
                       label: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       onPressed: () {
+                        if (_isActionTaken) return;
+                        _isActionTaken = true;
+                        CallNotificationService().hideBanner();
+                        RingtoneService().stopRingtone();
                         CallService().rejectCall(widget.callId);
                         Navigator.pop(context);
                       },
@@ -182,6 +210,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                       icon: const Icon(Icons.call, color: Colors.black),
                       label: const Text('Accept', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
                       onPressed: () {
+                        if (_isActionTaken) return;
+                        _isActionTaken = true;
+                        CallNotificationService().hideBanner();
+                        RingtoneService().stopRingtone();
                         CallService().acceptCall(widget.callId);
                         Navigator.pushReplacement(
                           context,

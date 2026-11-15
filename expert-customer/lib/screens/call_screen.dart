@@ -59,6 +59,18 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _initAgora(String channelName, String token) async {
     _channelName = channelName;
+    if (token.isEmpty) {
+      try {
+        final tokenData = await _apiService.getAgoraToken(channelName, '0');
+        if (tokenData != null && tokenData['token'] != null) {
+          token = tokenData['token'];
+        }
+      } catch (e) {
+        debugPrint('Customer fetching Agora token fallback error: $e');
+      }
+    }
+    debugPrint('Customer joining Agora channel: $channelName with token length: ${token.length}');
+
     final micStatus = await Permission.microphone.request();
     if (widget.callType == 'video') {
       await Permission.camera.request();
@@ -73,6 +85,9 @@ class _CallScreenState extends State<CallScreen> {
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
+        onError: (ErrorCodeType err, String msg) {
+          debugPrint("Customer Agora RTC Error code: $err, message: $msg");
+        },
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           debugPrint("local user ${connection.localUid} joined successfully");
           _engine?.setEnableSpeakerphone(true);

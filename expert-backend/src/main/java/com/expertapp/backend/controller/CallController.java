@@ -77,5 +77,23 @@ public class CallController {
         }
         return ResponseEntity.ok(callService.getCustomerCallHistory(userPrincipal.getId()));
     }
+
+    @GetMapping("/token")
+    @Operation(summary = "Get an Agora RTC token for channel and numeric UID")
+    public ResponseEntity<Map<String, Object>> getAgoraToken(
+            @RequestParam String channelName,
+            @RequestParam(required = false, defaultValue = "0") String uid) {
+        long numericUid = 0;
+        try {
+            numericUid = Long.parseLong(uid);
+        } catch (NumberFormatException ignored) {}
+
+        String token = callService.generateTokenForChannel(channelName, numericUid);
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "channelName", channelName,
+                "uid", numericUid
+        ));
+    }
 }
 

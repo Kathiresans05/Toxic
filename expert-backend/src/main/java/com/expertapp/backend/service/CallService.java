@@ -83,8 +83,7 @@ public class CallService {
         }
 
         // Generate Agora Token for publisher (customer)
-        long customerUid = Math.abs(customerId.getMostSignificantBits() % 10000000L);
-        String token = agoraService.generateRtcToken(channelName, customerUid, AgoraService.Role.PUBLISHER);
+        String token = agoraService.generateRtcToken(channelName, 0, AgoraService.Role.PUBLISHER);
 
         CallSession session = new CallSession(callId, customer, expert, request.getCallType(), channelName, rate);
         session.setAgoraToken(token);
@@ -96,6 +95,7 @@ public class CallService {
         wsAlert.put("event", "INCOMING_CALL");
         wsAlert.put("callId", callId);
         wsAlert.put("channelName", channelName);
+        wsAlert.put("agoraToken", token);
         wsAlert.put("callerName", customer.getFullName());
         wsAlert.put("callerId", customer.getId().toString());
         wsAlert.put("callType", request.getCallType().name());
@@ -125,8 +125,7 @@ public class CallService {
         session.setStartTime(Instant.now());
 
         // Generate Agora Token for Creator
-        long creatorUid = Math.abs(creatorUserId.getMostSignificantBits() % 10000000L);
-        String token = agoraService.generateRtcToken(session.getAgoraChannelName(), creatorUid, AgoraService.Role.PUBLISHER);
+        String token = agoraService.generateRtcToken(session.getAgoraChannelName(), 0, AgoraService.Role.PUBLISHER);
         session.setAgoraToken(token);
 
         CallSession saved = callSessionRepository.save(session);
@@ -136,6 +135,7 @@ public class CallService {
         wsAlert.put("event", "CALL_ACCEPTED");
         wsAlert.put("callId", callId);
         wsAlert.put("channelName", session.getAgoraChannelName());
+        wsAlert.put("agoraToken", token);
         webSocketHandler.sendToUser(session.getCustomer().getId().toString(), wsAlert);
 
         return toResponse(saved);
@@ -357,6 +357,10 @@ public class CallService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public String generateTokenForChannel(String channelName, long uid) {
+        return agoraService.generateRtcToken(channelName, uid, AgoraService.Role.PUBLISHER);
     }
 }
 

@@ -10,6 +10,7 @@ class CallNotificationService {
   CallNotificationService._internal();
 
   OverlayEntry? _overlayEntry;
+  bool _isHandlingCall = false;
 
   void showIncomingCallBanner({
     required BuildContext context,
@@ -21,6 +22,7 @@ class CallNotificationService {
   }) {
     // Stop any previous banner & start ringtone
     hideBanner();
+    _isHandlingCall = false;
     RingtoneService().startRingtone();
 
     _overlayEntry = OverlayEntry(
@@ -33,6 +35,8 @@ class CallNotificationService {
             color: Colors.transparent,
             child: GestureDetector(
               onTap: () {
+                if (_isHandlingCall) return;
+                _isHandlingCall = true;
                 hideBanner();
                 Navigator.push(
                   context,
@@ -106,13 +110,17 @@ class CallNotificationService {
                     IconButton(
                       icon: const Icon(Icons.call_end_rounded, color: Colors.redAccent, size: 24),
                       onPressed: () {
-                        CallService().rejectCall(callId);
+                        if (_isHandlingCall) return;
+                        _isHandlingCall = true;
                         hideBanner();
+                        CallService().rejectCall(callId);
                       },
                     ),
                     IconButton(
                       icon: const Icon(Icons.call_rounded, color: Color(0xFFFFC107), size: 24),
                       onPressed: () {
+                        if (_isHandlingCall) return;
+                        _isHandlingCall = true;
                         hideBanner();
                         CallService().acceptCall(callId);
                         Navigator.push(
@@ -146,5 +154,6 @@ class CallNotificationService {
     RingtoneService().stopRingtone();
     _overlayEntry?.remove();
     _overlayEntry = null;
+    _isHandlingCall = false;
   }
 }

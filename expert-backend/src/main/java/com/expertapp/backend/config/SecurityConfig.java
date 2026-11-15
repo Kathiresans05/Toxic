@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/ws/**",
+                                "/api/v1/calls/token",
                                 "/api/v1/payments/webhook/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/experts/**").permitAll()

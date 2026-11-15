@@ -6,8 +6,9 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:expert_professional/widgets/privacy_video_overlay.dart';
 import 'dart:typed_data';
-
 import 'package:expert_professional/services/call_service.dart';
+import 'package:expert_professional/services/notification_service.dart';
+import 'package:expert_professional/services/ringtone_service.dart';
 
 const String appId = "c9afe369772c48659610c8b6368df693";
 
@@ -18,6 +19,7 @@ class CallScreen extends StatefulWidget {
   final String channelName;
   final String? callId;
   final String callType;
+  final String? agoraToken;
 
   const CallScreen({
     super.key,
@@ -27,6 +29,7 @@ class CallScreen extends StatefulWidget {
     required this.channelName,
     this.callId,
     this.callType = 'video',
+    this.agoraToken,
   });
 
   @override
@@ -55,6 +58,8 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
+    CallNotificationService().hideBanner();
+    RingtoneService().stopRingtone();
     _fetchCommission();
     _initAgora();
     _listenToCallStatus();
@@ -128,6 +133,9 @@ class _CallScreenState extends State<CallScreen> {
           // Customer left
           _endCall();
         },
+        onError: (ErrorCodeType err, String msg) {
+          debugPrint("Expert Agora RTC Error code: $err, message: $msg");
+        },
       ),
     );
 
@@ -147,8 +155,12 @@ class _CallScreenState extends State<CallScreen> {
       await _engine!.disableVideo();
     }
 
-    final tokenData = await ApiService().getAgoraToken(widget.channelName, '0');
-    final token = tokenData?['token'] ?? '';
+    String token = widget.agoraToken ?? '';
+    if (token.isEmpty) {
+      final tokenData = await ApiService().getAgoraToken(widget.channelName, '0');
+      token = tokenData?['token'] ?? '';
+    }
+    debugPrint('Expert joining Agora channel: ${widget.channelName} with token length: ${token.length}');
 
     await _engine!.joinChannel(
       token: token,
@@ -285,6 +297,8 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    CallNotificationService().hideBanner();
+    RingtoneService().stopRingtone();
     _callTimer?.cancel();
     _engine?.leaveChannel();
     _engine?.release();
