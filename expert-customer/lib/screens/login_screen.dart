@@ -23,13 +23,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Timer? _coldStartTimer;
   int _elapsedSeconds = 0;
 
-  // Color Palette inspired by the reference UI
-  static const Color _bgCream = Color(0xFFFBF5ED);
+  // Exact Color Palette extracted from reference design
+  static const Color _bgWarmPeach = Color(0xFFFDF3E7);
   static const Color _brandGreen = Color(0xFF0F4D3C);
   static const Color _accentGold = Color(0xFFE5A93B);
-  static const Color _darkTeal = Color(0xFF133E35);
+  static const Color _darkTealHeading = Color(0xFF0E332B);
   static const Color _textMuted = Color(0xFF6B6560);
-  static const Color _borderColor = Color(0xFFE8DFD5);
+  static const Color _borderColor = Color(0xFFEAE2D8);
 
   @override
   void initState() {
@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: _darkTeal,
+                  color: _brandGreen,
                 ),
               ),
               const SizedBox(height: 8),
@@ -213,187 +213,206 @@ class _LoginScreenState extends State<LoginScreen> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      backgroundColor: _bgCream,
-      body: SafeArea(
-        bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 20 : 0),
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    children: [
-                      // Top Navigation / Back button if navigated from splash
-                      if (Navigator.canPop(context))
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16, top: 8),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: _darkTeal,
-                                size: 20,
+      backgroundColor: _bgWarmPeach,
+      body: Stack(
+        children: [
+          // Ambient Warm Golden Corner Swooshes (Top background curves)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 140,
+            child: CustomPaint(
+              painter: _TopCornerSwooshesPainter(),
+            ),
+          ),
+
+          SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 20 : 0),
+                  physics: const ClampingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 6),
+
+                          // Top Navigation Back Button if popped
+                          if (Navigator.canPop(context))
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 14),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    color: _brandGreen,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
                               ),
-                              onPressed: () => Navigator.pop(context),
+                            )
+                          else
+                            const SizedBox(height: 8),
+
+                          // 1. Top Brand Logo & Tagline (Matches the FIC Hub format)
+                          _buildBrandHeader(),
+
+                          const SizedBox(height: 12),
+
+                          // 2. Realistic Photo Banner with Sweeping Emerald Wave
+                          _buildRealisticPhotoHeroBanner(),
+
+                          // 3. Form Body
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 18),
+
+                                // "Welcome Back" Heading
+                                const Text(
+                                  'Welcome Back',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    color: _darkTealHeading,
+                                    letterSpacing: -0.8,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Sign in to your ConnectaX account',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    color: _textMuted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                // Input 1: Mobile / Email Pill Card
+                                _buildPillInputField(
+                                  controller: _identifierController,
+                                  hintText: 'Mobile Number or Email',
+                                  icon: Icons.mail_outline_rounded,
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Input 2: Password Pill Card with Eye toggle
+                                _buildPillInputField(
+                                  controller: _passwordController,
+                                  hintText: 'Password',
+                                  icon: Icons.lock_outline_rounded,
+                                  obscureText: _obscurePassword,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: _brandGreen.withValues(alpha: 0.85),
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      setState(() => _obscurePassword = !_obscurePassword);
+                                    },
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Remember Me & Forgot Password Row
+                                _buildOptionsRow(),
+
+                                const SizedBox(height: 22),
+
+                                // Main "Sign In ➔" Emerald Pill Button
+                                _buildSignInButton(),
+
+                                // Server wakeup feedback
+                                if (_isLoading && _elapsedSeconds >= 2) ...[
+                                  const SizedBox(height: 12),
+                                  Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: _accentGold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Connecting to server... (${_elapsedSeconds}s)',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: _textMuted,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 20),
+
+                                // Register Now Redirection
+                                _buildRegisterRow(),
+
+                                const SizedBox(height: 24),
+                              ],
                             ),
                           ),
-                        )
-                      else
-                        const SizedBox(height: 12),
 
-                      // Brand Logo Header
-                      _buildHeaderLogo(),
+                          const Spacer(),
 
-                      const SizedBox(height: 12),
-
-                      // Scenic Wave Hero Banner with Consultation & Skyline art
-                      _buildScenicHeroBanner(),
-
-                      // Form Body
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 20),
-
-                            // Welcome Back Heading
-                            const Text(
-                              'Welcome Back',
-                              style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w800,
-                                color: _darkTeal,
-                                letterSpacing: -0.8,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Sign in to your ConnectaX account',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: _textMuted,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-
-                            const SizedBox(height: 22),
-
-                            // Mobile / Email Field (White Rounded Pill)
-                            _buildPillInputField(
-                              controller: _identifierController,
-                              hintText: 'Mobile Number or Email',
-                              icon: Icons.mail_outline_rounded,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Password Field (White Rounded Pill)
-                            _buildPillInputField(
-                              controller: _passwordController,
-                              hintText: 'Password',
-                              icon: Icons.lock_outline_rounded,
-                              obscureText: _obscurePassword,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                  color: _brandGreen.withValues(alpha: 0.8),
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() => _obscurePassword = !_obscurePassword);
-                                },
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Remember Me & Forgot Password Row
-                            _buildOptionsRow(),
-
-                            const SizedBox(height: 22),
-
-                            // Sign In Button (Deep Emerald Green Pill)
-                            _buildSignInButton(),
-
-                            // Server wakeup status (Render cold start notice)
-                            if (_isLoading && _elapsedSeconds >= 2) ...[
-                              const SizedBox(height: 12),
-                              Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: _accentGold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Connecting to server... (${_elapsedSeconds}s)',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: _textMuted,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-
-                            const SizedBox(height: 20),
-
-                            // Register Redirection Row
-                            _buildRegisterRow(),
-
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                          // 4. Bottom Emerald & Gold Curved Footer
+                          _buildBottomWaveFooter(),
+                        ],
                       ),
-
-                      const Spacer(),
-
-                      // Decorative Wave Footer
-                      _buildBottomWaveFooter(),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Top Brand Logo & Tagline (Matches the FIC Business Hub style)
-  Widget _buildHeaderLogo() {
+  /// Top Brand Logo & Tagline (Matches the FIC Hub format)
+  Widget _buildBrandHeader() {
     return Column(
       children: [
+        // Stylized Brand Monogram & Title
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Stylized Logo Monogram
+            // Monogram Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: _brandGreen,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: _brandGreen.withValues(alpha: 0.25),
-                    blurRadius: 8,
+                    color: _brandGreen.withValues(alpha: 0.3),
+                    blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
                 ],
@@ -432,57 +451,65 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: _brandGreen,
-                    letterSpacing: 1.0,
+                    letterSpacing: 1.2,
                   ),
                 ),
                 Text(
-                  'EXPERT & CONSULTANT HUB',
+                  'BUSINESS HUB',
                   style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: _darkTeal,
-                    letterSpacing: 1.6,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: _brandGreen,
+                    letterSpacing: 2.2,
                   ),
                 ),
               ],
             ),
           ],
         ),
+
         const SizedBox(height: 8),
-        // Connect • Discover • Grow Tagline
+
+        // Tagline: Connect • Discover • Grow
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
             Text(
               'Connect',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _darkTeal,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: _brandGreen,
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 7),
-              child: Text('•', style: TextStyle(color: _accentGold, fontSize: 14)),
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '•',
+                style: TextStyle(color: _accentGold, fontSize: 15, fontWeight: FontWeight.bold),
+              ),
             ),
             Text(
               'Discover',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _darkTeal,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: _brandGreen,
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 7),
-              child: Text('•', style: TextStyle(color: _accentGold, fontSize: 14)),
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '•',
+                style: TextStyle(color: _accentGold, fontSize: 15, fontWeight: FontWeight.bold),
+              ),
             ),
             Text(
               'Grow',
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _darkTeal,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: _brandGreen,
               ),
             ),
           ],
@@ -491,49 +518,69 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Scenic Hero Banner with Golden Sunset Skyline & Double Wave Ribbons
-  Widget _buildScenicHeroBanner() {
+  /// Realistic Photo Hero Banner with Sunset Skyline & Sweeping Emerald Wave
+  Widget _buildRealisticPhotoHeroBanner() {
     return SizedBox(
-      height: 150,
+      height: 185,
       width: double.infinity,
-      child: Stack(
-        children: [
-          // Sunset Landscape Art with Custom Curved Clipper
-          Positioned.fill(
-            child: ClipPath(
-              clipper: _TopWaveClipper(),
+      child: ClipPath(
+        clipper: _BannerBottomWaveClipper(),
+        child: Stack(
+          children: [
+            // 1. Real Photography Image of Girls & Boys Professionals at Sunset
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/login_hero.jpg',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFFFFAF2),
+                          Color(0xFFFFE0B2),
+                          Color(0xFFFFB74D),
+                          Color(0xFFF57C00),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // 2. Soft sunset atmosphere overlay
+            Positioned.fill(
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFFFFFAF2),
-                      Color(0xFFFFE0B2),
-                      Color(0xFFFFB74D),
-                      Color(0xFFF57C00),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.12),
                     ],
                   ),
                 ),
-                child: CustomPaint(
-                  painter: _SkylineSilhouettesPainter(),
-                ),
               ),
             ),
-          ),
 
-          // Lower Wave Ribbon (Gold & Deep Emerald Green)
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _WaveRibbonPainter(),
+            // 3. The Signature Bold Emerald Green & Gold Wave on the Left & Bottom
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _HeroEmeraldWavePainter(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// White Rounded Pill Input Field with Icon, Divider & Placeholder
+  /// White Pill Input Field with Icon, Divider & Placeholder
   Widget _buildPillInputField({
     required TextEditingController controller,
     required String hintText,
@@ -546,11 +593,11 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 56,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(color: _borderColor, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -561,7 +608,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(width: 18),
           Icon(icon, color: _brandGreen, size: 22),
           const SizedBox(width: 12),
-          // Subtle vertical divider line
+          // Vertical divider line
           Container(
             width: 1.2,
             height: 22,
@@ -680,7 +727,7 @@ class _LoginScreenState extends State<LoginScreen> {
           elevation: 4,
           shadowColor: _brandGreen.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: _isLoading
@@ -750,10 +797,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Elegant Bottom Wave to frame the bottom of the screen
+  /// Bottom Wave to frame the bottom of the screen
   Widget _buildBottomWaveFooter() {
     return SizedBox(
-      height: 40,
+      height: 38,
       width: double.infinity,
       child: CustomPaint(
         painter: _BottomWavePainter(),
@@ -763,23 +810,61 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // -------------------------------------------------------------
-// CUSTOM CLIPPERS & PAINTERS FOR ARTISTIC WAVES & SKYLINE
+// CUSTOM PAINTERS & CLIPPERS (Exact match to reference design)
 // -------------------------------------------------------------
 
-/// Wave shape clipper for the upper banner
-class _TopWaveClipper extends CustomClipper<Path> {
+/// Top corner ambient golden swooshes
+class _TopCornerSwooshesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final swooshPaint = Paint()
+      ..color = const Color(0xFFF3DEC4).withValues(alpha: 0.45)
+      ..style = PaintingStyle.fill;
+
+    // Top Right ambient wave
+    final rightPath = Path();
+    rightPath.moveTo(size.width * 0.65, 0);
+    rightPath.quadraticBezierTo(
+      size.width * 0.85,
+      size.height * 0.65,
+      size.width,
+      size.height * 0.40,
+    );
+    rightPath.lineTo(size.width, 0);
+    rightPath.close();
+    canvas.drawPath(rightPath, swooshPaint);
+
+    // Top Left subtle wave
+    final leftPath = Path();
+    leftPath.moveTo(0, 0);
+    leftPath.quadraticBezierTo(
+      size.width * 0.20,
+      size.height * 0.50,
+      0,
+      size.height * 0.85,
+    );
+    leftPath.close();
+    canvas.drawPath(leftPath, swooshPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Bottom clipper for the hero banner (gentle, organic wave cut)
+class _BannerBottomWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 35);
+    path.lineTo(0, size.height - 30);
 
-    // Flowing smooth wave: curves downwards in the left-center, then swoops gracefully
-    final firstControl = Offset(size.width * 0.32, size.height + 15);
-    final firstEnd = Offset(size.width * 0.65, size.height - 25);
+    // Smooth sweeping bottom curve
+    final firstControl = Offset(size.width * 0.35, size.height + 12);
+    final firstEnd = Offset(size.width * 0.68, size.height - 24);
     path.quadraticBezierTo(firstControl.dx, firstControl.dy, firstEnd.dx, firstEnd.dy);
 
-    final secondControl = Offset(size.width * 0.88, size.height - 50);
-    final secondEnd = Offset(size.width, size.height - 20);
+    final secondControl = Offset(size.width * 0.88, size.height - 46);
+    final secondEnd = Offset(size.width, size.height - 18);
     path.quadraticBezierTo(secondControl.dx, secondControl.dy, secondEnd.dx, secondEnd.dy);
 
     path.lineTo(size.width, 0);
@@ -791,157 +876,68 @@ class _TopWaveClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-/// Paints skyline silhouettes, glowing sunrise, and professional figures
-class _SkylineSilhouettesPainter extends CustomPainter {
+/// Sweeping Bold Emerald Green Wave & Golden Ribbon on the Hero Banner (Image 2 match)
+class _HeroEmeraldWavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Glowing Sunset Disc
-    final sunPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.95),
-          const Color(0xFFFFD54F).withValues(alpha: 0.6),
-          const Color(0xFFFFB300).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(
-        center: Offset(size.width * 0.52, size.height * 0.42),
-        radius: 65,
-      ));
-    canvas.drawCircle(Offset(size.width * 0.52, size.height * 0.42), 65, sunPaint);
-
-    // 2. City High-Rise Silhouettes
-    final buildingPaint = Paint()
-      ..color = const Color(0xFF0F4D3C).withValues(alpha: 0.18)
-      ..style = PaintingStyle.fill;
-
-    // Distant high rises
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.05, size.height * 0.35, 26, size.height * 0.65), buildingPaint);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.13, size.height * 0.28, 22, size.height * 0.72), buildingPaint);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.22, size.height * 0.40, 30, size.height * 0.60), buildingPaint);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.72, size.height * 0.30, 24, size.height * 0.70), buildingPaint);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.80, size.height * 0.22, 28, size.height * 0.78), buildingPaint);
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.89, size.height * 0.38, 24, size.height * 0.62), buildingPaint);
-
-    // 3. Terrace railing line
-    final terracePaint = Paint()
-      ..color = const Color(0xFF0F4D3C).withValues(alpha: 0.45)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-      Offset(size.width * 0.15, size.height * 0.82),
-      Offset(size.width * 0.85, size.height * 0.82),
-      terracePaint,
-    );
-
-    // 4. Silhouettes of people / consultants standing together
-    final peoplePaint = Paint()
-      ..color = const Color(0xFF0D3D30).withValues(alpha: 0.75)
-      ..style = PaintingStyle.fill;
-
-    void drawPerson(double centerX, double groundY, double scale) {
-      // Head
-      canvas.drawCircle(Offset(centerX, groundY - 26 * scale), 4.2 * scale, peoplePaint);
-      // Body / Suit
-      final bodyPath = Path();
-      bodyPath.moveTo(centerX - 4.5 * scale, groundY - 20 * scale);
-      bodyPath.lineTo(centerX + 4.5 * scale, groundY - 20 * scale);
-      bodyPath.lineTo(centerX + 6.0 * scale, groundY);
-      bodyPath.lineTo(centerX - 6.0 * scale, groundY);
-      bodyPath.close();
-      canvas.drawPath(bodyPath, peoplePaint);
-    }
-
-    final ground = size.height * 0.82;
-    drawPerson(size.width * 0.38, ground, 1.0);
-    drawPerson(size.width * 0.46, ground, 1.08);
-    drawPerson(size.width * 0.54, ground, 1.05);
-    drawPerson(size.width * 0.62, ground, 0.98);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Paints the layered Gold & Emerald wave ribbons framing the banner
-class _WaveRibbonPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 1. Warm Gold ribbon
+    // 1. Warm Golden Ribbon Accent
     final goldPaint = Paint()
       ..color = const Color(0xFFE5A93B)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0;
+      ..style = PaintingStyle.fill;
 
     final goldPath = Path();
-    goldPath.moveTo(0, size.height - 30);
+    goldPath.moveTo(0, size.height * 0.44);
     goldPath.quadraticBezierTo(
-      size.width * 0.32,
-      size.height + 20,
-      size.width * 0.65,
-      size.height - 20,
+      size.width * 0.12,
+      size.height * 0.68,
+      size.width * 0.38,
+      size.height * 0.82,
     );
     goldPath.quadraticBezierTo(
-      size.width * 0.88,
-      size.height - 45,
+      size.width * 0.68,
+      size.height * 0.94,
       size.width,
-      size.height - 15,
+      size.height * 0.72,
     );
+    goldPath.lineTo(size.width, size.height * 0.78);
+    goldPath.quadraticBezierTo(
+      size.width * 0.68,
+      size.height * 1.0,
+      size.width * 0.38,
+      size.height * 0.88,
+    );
+    goldPath.quadraticBezierTo(
+      size.width * 0.12,
+      size.height * 0.74,
+      0,
+      size.height * 0.52,
+    );
+    goldPath.close();
     canvas.drawPath(goldPath, goldPaint);
 
-    // 2. Deep Emerald Green ribbon
+    // 2. Bold Solid Emerald Green Wave covering the left-bottom quarter
     final greenPaint = Paint()
       ..color = const Color(0xFF0F4D3C)
       ..style = PaintingStyle.fill;
 
     final greenPath = Path();
-    greenPath.moveTo(0, size.height - 26);
+    greenPath.moveTo(0, size.height * 0.48);
     greenPath.quadraticBezierTo(
-      size.width * 0.32,
-      size.height + 24,
-      size.width * 0.65,
-      size.height - 16,
+      size.width * 0.12,
+      size.height * 0.72,
+      size.width * 0.38,
+      size.height * 0.86,
     );
     greenPath.quadraticBezierTo(
-      size.width * 0.88,
-      size.height - 41,
+      size.width * 0.68,
+      size.height * 0.98,
       size.width,
-      size.height - 11,
+      size.height * 0.76,
     );
     greenPath.lineTo(size.width, size.height);
     greenPath.lineTo(0, size.height);
     greenPath.close();
-
-    // Fill only a slender sweep
-    final sweepPath = Path();
-    sweepPath.moveTo(0, size.height - 24);
-    sweepPath.quadraticBezierTo(
-      size.width * 0.32,
-      size.height + 24,
-      size.width * 0.65,
-      size.height - 16,
-    );
-    sweepPath.quadraticBezierTo(
-      size.width * 0.88,
-      size.height - 41,
-      size.width,
-      size.height - 11,
-    );
-    sweepPath.lineTo(size.width, size.height - 3);
-    sweepPath.quadraticBezierTo(
-      size.width * 0.88,
-      size.height - 33,
-      size.width * 0.65,
-      size.height - 8,
-    );
-    sweepPath.quadraticBezierTo(
-      size.width * 0.32,
-      size.height + 32,
-      0,
-      size.height - 16,
-    );
-    sweepPath.close();
-
-    canvas.drawPath(sweepPath, greenPaint);
+    canvas.drawPath(greenPath, greenPaint);
   }
 
   @override
@@ -954,23 +950,23 @@ class _BottomWavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 1. Subtle gold curve
     final goldPaint = Paint()
-      ..color = const Color(0xFFE5A93B).withValues(alpha: 0.8)
+      ..color = const Color(0xFFE5A93B).withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
 
     final goldPath = Path();
     goldPath.moveTo(0, size.height);
-    goldPath.lineTo(0, size.height * 0.55);
+    goldPath.lineTo(0, size.height * 0.52);
     goldPath.quadraticBezierTo(
       size.width * 0.35,
-      size.height * 0.20,
+      size.height * 0.18,
       size.width * 0.70,
-      size.height * 0.65,
+      size.height * 0.62,
     );
     goldPath.quadraticBezierTo(
       size.width * 0.88,
-      size.height * 0.85,
+      size.height * 0.82,
       size.width,
-      size.height * 0.40,
+      size.height * 0.38,
     );
     goldPath.lineTo(size.width, size.height);
     goldPath.close();
@@ -983,18 +979,18 @@ class _BottomWavePainter extends CustomPainter {
 
     final greenPath = Path();
     greenPath.moveTo(0, size.height);
-    greenPath.lineTo(0, size.height * 0.70);
+    greenPath.lineTo(0, size.height * 0.68);
     greenPath.quadraticBezierTo(
       size.width * 0.40,
-      size.height * 0.35,
+      size.height * 0.32,
       size.width * 0.75,
-      size.height * 0.80,
+      size.height * 0.78,
     );
     greenPath.quadraticBezierTo(
       size.width * 0.90,
-      size.height * 0.95,
+      size.height * 0.92,
       size.width,
-      size.height * 0.55,
+      size.height * 0.52,
     );
     greenPath.lineTo(size.width, size.height);
     greenPath.close();
