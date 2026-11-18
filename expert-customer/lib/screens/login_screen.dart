@@ -23,13 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Timer? _coldStartTimer;
   int _elapsedSeconds = 0;
 
-  // Exact Color Palette extracted from reference design
-  static const Color _bgWarmPeach = Color(0xFFFDF3E7);
-  static const Color _brandGreen = Color(0xFF0F4D3C);
+  // Exact Color Palette sampled from reference design (Image 2)
+  static const Color _bgWarmPeach = Color(0xFFFEE8D1); // Sampled #FEE8D1
+  static const Color _brandGreen = Color(0xFF0C4F3E);  // Sampled #0C4F3E
   static const Color _accentGold = Color(0xFFE5A93B);
-  static const Color _darkTealHeading = Color(0xFF0E332B);
-  static const Color _textMuted = Color(0xFF6B6560);
-  static const Color _borderColor = Color(0xFFEAE2D8);
+  static const Color _darkNavyHeading = Color(0xFF0B3543); // Sampled #0B3543
+  static const Color _registerGold = Color(0xFFC89153); // Sampled #C89153
+  static const Color _textMuted = Color(0xFF5E5750);
+  static const Color _borderColor = Color(0xFFF5DFC9);
 
   @override
   void initState() {
@@ -282,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w900,
-                                    color: _darkTealHeading,
+                                    color: _darkNavyHeading,
                                     letterSpacing: -0.8,
                                   ),
                                 ),
@@ -593,13 +594,13 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 56,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(color: _borderColor, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -787,8 +788,8 @@ class _LoginScreenState extends State<LoginScreen> {
           child: const Text(
             'Register Now',
             style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFFC77717),
+              fontSize: 14.5,
+              color: _registerGold,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -818,7 +819,7 @@ class _TopCornerSwooshesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final swooshPaint = Paint()
-      ..color = const Color(0xFFF3DEC4).withValues(alpha: 0.45)
+      ..color = const Color(0xFFF7D5B0).withValues(alpha: 0.55)
       ..style = PaintingStyle.fill;
 
     // Top Right ambient wave
