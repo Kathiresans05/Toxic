@@ -83,6 +83,15 @@ class ForegroundService {
     }
   }
 
+  Future<void> dismissCallNotification() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('dismissCallNotification');
+    } catch (e) {
+      debugPrint('Error dismissing incoming call native notification: $e');
+    }
+  }
+
   Future<void> bringAppToForeground() async {
     if (!Platform.isAndroid) return;
     try {

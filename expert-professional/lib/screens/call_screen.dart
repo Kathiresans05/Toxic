@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:expert_professional/services/call_service.dart';
 import 'package:expert_professional/services/notification_service.dart';
 import 'package:expert_professional/services/ringtone_service.dart';
+import 'package:expert_professional/services/foreground_service.dart';
 
 const String appId = "c9afe369772c48659610c8b6368df693";
 
@@ -59,6 +60,7 @@ class _CallScreenState extends State<CallScreen> {
   void initState() {
     super.initState();
     CallNotificationService().hideBanner();
+    ForegroundService().dismissCallNotification();
     RingtoneService().stopRingtone();
     _fetchCommission();
     _initAgora();
@@ -167,6 +169,10 @@ class _CallScreenState extends State<CallScreen> {
       ),
     );
 
+    await _engine!.setAudioProfile(
+      profile: AudioProfileType.audioProfileSpeechStandard,
+      scenario: AudioScenarioType.audioScenarioGameStreaming,
+    );
     await _engine!.enableAudio();
     await _engine!.enableLocalAudio(true);
     await _engine!.muteLocalAudioStream(false);
@@ -206,6 +212,8 @@ class _CallScreenState extends State<CallScreen> {
     );
 
     await _engine!.setEnableSpeakerphone(true);
+    await _engine!.adjustRecordingSignalVolume(100);
+    await _engine!.adjustPlaybackSignalVolume(100);
   }
 
   Future<void> _fetchCommission() async {

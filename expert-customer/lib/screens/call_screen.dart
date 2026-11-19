@@ -40,7 +40,7 @@ class _CallScreenState extends State<CallScreen> {
   Timer? _ringTimeoutTimer;
   int _secondsElapsed = 0;
   bool _isMuted = false;
-  bool _isSpeakerOn = false;
+  bool _isSpeakerOn = true;
   bool _isCameraOff = false;
   bool _isCallActive = false;
   String _status = 'Connecting...';
@@ -162,6 +162,10 @@ class _CallScreenState extends State<CallScreen> {
       ),
     );
 
+    await _engine!.setAudioProfile(
+      profile: AudioProfileType.audioProfileSpeechStandard,
+      scenario: AudioScenarioType.audioScenarioGameStreaming,
+    );
     await _engine!.enableAudio();
     await _engine!.enableLocalAudio(true);
     await _engine!.muteLocalAudioStream(false);
@@ -194,6 +198,8 @@ class _CallScreenState extends State<CallScreen> {
     );
 
     await _engine!.setEnableSpeakerphone(true);
+    await _engine!.adjustRecordingSignalVolume(100);
+    await _engine!.adjustPlaybackSignalVolume(100);
   }
 
   @override

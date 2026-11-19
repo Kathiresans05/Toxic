@@ -5,6 +5,7 @@ import 'package:expert_professional/services/ringtone_service.dart';
 import 'package:expert_professional/services/call_service.dart';
 import 'package:expert_professional/services/notification_service.dart';
 import 'package:expert_professional/services/socket_service.dart';
+import 'package:expert_professional/services/foreground_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String callId;
@@ -47,6 +48,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       if (mounted && !_isActionTaken) {
         _isActionTaken = true;
         CallNotificationService().hideBanner();
+        ForegroundService().dismissCallNotification();
         RingtoneService().stopRingtone();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -75,6 +77,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   void dispose() {
     _waveTimer.cancel();
     CallNotificationService().hideBanner();
+    ForegroundService().dismissCallNotification();
     RingtoneService().stopRingtone();
     super.dispose();
   }
@@ -192,6 +195,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         if (_isActionTaken) return;
                         _isActionTaken = true;
                         CallNotificationService().hideBanner();
+                        ForegroundService().dismissCallNotification();
                         RingtoneService().stopRingtone();
                         CallService().rejectCall(widget.callId);
                         Navigator.pop(context);
@@ -215,6 +219,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         if (_isActionTaken) return;
                         _isActionTaken = true;
                         CallNotificationService().hideBanner();
+                        ForegroundService().dismissCallNotification();
                         RingtoneService().stopRingtone();
                         CallService().acceptCall(widget.callId);
                         if (widget.callerId != null && widget.callerId!.isNotEmpty) {

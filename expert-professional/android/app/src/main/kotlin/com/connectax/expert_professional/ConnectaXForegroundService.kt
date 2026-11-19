@@ -27,6 +27,7 @@ class ConnectaXForegroundService : Service() {
         const val ACTION_START = "ACTION_START_ONLINE"
         const val ACTION_STOP = "ACTION_STOP_ONLINE"
         const val ACTION_INCOMING_CALL = "ACTION_INCOMING_CALL"
+        const val ACTION_DISMISS_CALL = "ACTION_DISMISS_CALL"
 
         const val EXTRA_CALLER_NAME = "EXTRA_CALLER_NAME"
         const val EXTRA_CALL_ID = "EXTRA_CALL_ID"
@@ -56,6 +57,9 @@ class ConnectaXForegroundService : Service() {
             }
             ACTION_INCOMING_CALL -> {
                 handleIncomingCall(intent)
+            }
+            ACTION_DISMISS_CALL -> {
+                dismissIncomingCall()
             }
         }
         return START_STICKY
@@ -144,6 +148,15 @@ class ConnectaXForegroundService : Service() {
         // Attempt direct launch of the activity if screen was locked or backgrounded
         try {
             startActivity(fullScreenIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun dismissIncomingCall() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(CALL_NOTIFICATION_ID)
         } catch (e: Exception) {
             e.printStackTrace()
         }

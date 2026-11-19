@@ -66,6 +66,10 @@ class MainActivity : FlutterActivity() {
                     triggerIncomingCallNative(callerName, callId, channelName, price, callType)
                     result.success(true)
                 }
+                "dismissCallNotification" -> {
+                    dismissCallNotificationNative()
+                    result.success(true)
+                }
                 "bringAppToForeground" -> {
                     bringAppToForegroundNative()
                     result.success(true)
@@ -114,6 +118,19 @@ class MainActivity : FlutterActivity() {
             putExtra(ConnectaXForegroundService.EXTRA_CALL_TYPE, callType)
         }
         startService(serviceIntent)
+    }
+
+    private fun dismissCallNotificationNative() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(ConnectaXForegroundService.CALL_NOTIFICATION_ID)
+            val serviceIntent = Intent(this, ConnectaXForegroundService::class.java).apply {
+                action = ConnectaXForegroundService.ACTION_DISMISS_CALL
+            }
+            startService(serviceIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun bringAppToForegroundNative() {
