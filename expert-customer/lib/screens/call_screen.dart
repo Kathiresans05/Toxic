@@ -88,8 +88,11 @@ class _CallScreenState extends State<CallScreen> {
         onError: (ErrorCodeType err, String msg) {
           debugPrint("Customer Agora RTC Error code: $err, message: $msg");
         },
+        onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
+          debugPrint("Customer Agora Connection State: $state, reason: $reason");
+        },
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("local user ${connection.localUid} joined successfully");
+          debugPrint("Customer local user ${connection.localUid} joined channel: ${connection.channelId}");
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.adjustRecordingSignalVolume(100);
@@ -97,16 +100,41 @@ class _CallScreenState extends State<CallScreen> {
           _engine?.muteAllRemoteAudioStreams(false);
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("remote user $remoteUid joined successfully");
+          debugPrint("Customer remote user $remoteUid joined successfully in channel: ${connection.channelId}");
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
-          setState(() {
-            _remoteUid = remoteUid;
-          });
+          if (mounted) {
+            setState(() {
+              _remoteUid = remoteUid;
+            });
+          }
+        },
+        onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
+          debugPrint("Customer Remote Audio state: uid $remoteUid, state $state, reason $reason");
+          if (state == RemoteAudioState.remoteAudioStateDecoding || state == RemoteAudioState.remoteAudioStateStarting) {
+            _engine?.setEnableSpeakerphone(true);
+            _engine?.adjustPlaybackSignalVolume(100);
+            _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
+            if (mounted && _remoteUid == null) {
+              setState(() {
+                _remoteUid = remoteUid;
+              });
+            }
+          }
+        },
+        onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
+          debugPrint("Customer Remote Video state: uid $remoteUid, state $state, reason $reason");
+          if (state == RemoteVideoState.remoteVideoStateDecoding || state == RemoteVideoState.remoteVideoStateStarting) {
+            if (mounted && _remoteUid != remoteUid) {
+              setState(() {
+                _remoteUid = remoteUid;
+              });
+            }
+          }
         },
         onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("remote user $remoteUid left channel");
+          debugPrint("Customer remote user $remoteUid left channel");
           setState(() {
             _remoteUid = null;
           });
@@ -137,6 +165,7 @@ class _CallScreenState extends State<CallScreen> {
 
     if (widget.callType == 'video') {
       await _engine!.enableVideo();
+      await _engine!.enableLocalVideo(true);
       await _engine!.startPreview();
     } else {
       await _engine!.disableVideo();
@@ -152,6 +181,7 @@ class _CallScreenState extends State<CallScreen> {
         publishCameraTrack: widget.callType == 'video',
         autoSubscribeAudio: true,
         autoSubscribeVideo: widget.callType == 'video',
+        enableAudioRecordingOrPlayout: true,
       ),
     );
 
@@ -238,7 +268,7 @@ class _CallScreenState extends State<CallScreen> {
     });
     FlutterRingtonePlayer().playRingtone(looping: true);
 
-    _currentCallId = await CallService().initiateCall(
+    final callResult = await CallService().initiateCall(
       expertId: widget.expertId,
       customerId: customerId,
       customerName: customerName,
@@ -247,12 +277,22 @@ class _CallScreenState extends State<CallScreen> {
       pricePerMinute: widget.pricePerMinute,
     );
 
+    _currentCallId = callResult.callId;
+    if (callResult.agoraChannelName != null && callResult.agoraChannelName!.isNotEmpty) {
+      _channelName = callResult.agoraChannelName;
+    }
+    if (callResult.agoraToken != null && callResult.agoraToken!.isNotEmpty) {
+      agoraToken = callResult.agoraToken!;
+    }
+
+    final activeChannel = _channelName ?? channelName;
+
     // Ping the backend to trigger FCM push notification to the expert
     _apiService.notifyCall(
       expertId: widget.expertId,
       callId: _currentCallId!,
       callerName: customerName,
-      channelName: channelName,
+      channelName: activeChannel,
       pricePerMinute: widget.pricePerMinute,
       callType: widget.callType,
     );
@@ -268,8 +308,9 @@ class _CallScreenState extends State<CallScreen> {
           _status = 'Connected';
           _isCallActive = true;
         });
-        final serverChannel = data['channelName']?.toString() ?? channelName;
+        final serverChannel = data['channelName']?.toString() ?? _channelName ?? channelName;
         final serverToken = data['agoraToken']?.toString() ?? agoraToken;
+        _channelName = serverChannel;
         _initAgora(serverChannel, serverToken);
         _startTimers(customerId, serverChannel);
       }

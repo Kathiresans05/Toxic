@@ -13,6 +13,7 @@ class IncomingCallScreen extends StatefulWidget {
   final String? callerId;
   final double pricePerMinute;
   final String callType;
+  final String? agoraToken;
 
   const IncomingCallScreen({
     super.key,
@@ -22,6 +23,7 @@ class IncomingCallScreen extends StatefulWidget {
     this.callerId,
     this.pricePerMinute = 3.0,
     this.callType = 'video',
+    this.agoraToken,
   });
 
   @override
@@ -225,6 +227,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                               channelName: widget.channelName,
                               callId: widget.callId,
                               callType: widget.callType,
+                              agoraToken: widget.agoraToken,
                             ),
                           ),
                         );

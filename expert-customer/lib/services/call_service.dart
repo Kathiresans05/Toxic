@@ -2,6 +2,18 @@ import 'dart:async';
 import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/services/socket_service.dart';
 
+class CallInitiateResult {
+  final String callId;
+  final String? agoraChannelName;
+  final String? agoraToken;
+
+  CallInitiateResult({
+    required this.callId,
+    this.agoraChannelName,
+    this.agoraToken,
+  });
+}
+
 class CallService {
   static final CallService _instance = CallService._internal();
   factory CallService() => _instance;
@@ -10,7 +22,7 @@ class CallService {
   final ApiService _apiService = ApiService();
   final SocketService _socketService = SocketService();
 
-  Future<String> initiateCall({
+  Future<CallInitiateResult> initiateCall({
     required String expertId,
     required String customerId,
     required String customerName,
@@ -28,7 +40,11 @@ class CallService {
     );
 
     if (resp != null && resp['callId'] != null) {
-      return resp['callId'].toString();
+      return CallInitiateResult(
+        callId: resp['callId'].toString(),
+        agoraChannelName: resp['agoraChannelName']?.toString(),
+        agoraToken: resp['agoraToken']?.toString(),
+      );
     }
 
     // Direct WebSocket invite fallback
@@ -41,7 +57,10 @@ class CallService {
       'callType': callType,
       'pricePerMinute': pricePerMinute,
     });
-    return fallbackCallId;
+    return CallInitiateResult(
+      callId: fallbackCallId,
+      agoraChannelName: channelName,
+    );
   }
 
   Future<void> endCall(String callId, int durationSeconds, double amountCharged) async {

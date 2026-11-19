@@ -108,6 +108,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
         final pricePerMinute =
             double.tryParse(data['pricePerMinute']?.toString() ?? '') ?? 3.0;
         final callType = data['callType']?.toString().toLowerCase() ?? 'video';
+        final agoraToken = data['agoraToken']?.toString();
 
         // Trigger Android native wake-lock, full-screen intent & heads-up notification
         ForegroundService().triggerIncomingCall(
@@ -130,6 +131,7 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
               callerId: data['callerId']?.toString(),
               pricePerMinute: pricePerMinute,
               callType: callType,
+              agoraToken: agoraToken,
             ),
           ),
         );
@@ -2448,11 +2450,7 @@ class _AvailabilitySettingsScreenState
                       activeThumbColor: Colors.black,
                       inactiveTrackColor: Colors.white12,
                       inactiveThumbColor: Colors.grey,
-                      onChanged: (val) {
-                        setState(() {
-                          _isOnline = val;
-                        });
-                      },
+                      onChanged: (val) => _toggleOnline(val),
                     ),
                   ],
                 ),

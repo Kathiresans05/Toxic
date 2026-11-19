@@ -108,8 +108,14 @@ class _CallScreenState extends State<CallScreen> {
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
+        onError: (ErrorCodeType err, String msg) {
+          debugPrint("Expert Agora RTC Error code: $err, message: $msg");
+        },
+        onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
+          debugPrint("Expert Agora Connection State: $state, reason: $reason");
+        },
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("Expert local user ${connection.localUid} joined successfully");
+          debugPrint("Expert local user ${connection.localUid} joined successfully in channel: ${connection.channelId}");
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.adjustRecordingSignalVolume(100);
@@ -117,13 +123,38 @@ class _CallScreenState extends State<CallScreen> {
           _engine?.muteAllRemoteAudioStreams(false);
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("Expert remote user $remoteUid joined successfully");
+          debugPrint("Expert remote user $remoteUid joined successfully in channel: ${connection.channelId}");
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
-          setState(() {
-            _remoteUid = remoteUid;
-          });
+          if (mounted) {
+            setState(() {
+              _remoteUid = remoteUid;
+            });
+          }
+        },
+        onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
+          debugPrint("Expert Remote Audio state: uid $remoteUid, state $state, reason $reason");
+          if (state == RemoteAudioState.remoteAudioStateDecoding || state == RemoteAudioState.remoteAudioStateStarting) {
+            _engine?.setEnableSpeakerphone(true);
+            _engine?.adjustPlaybackSignalVolume(100);
+            _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
+            if (mounted && _remoteUid == null) {
+              setState(() {
+                _remoteUid = remoteUid;
+              });
+            }
+          }
+        },
+        onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
+          debugPrint("Expert Remote Video state: uid $remoteUid, state $state, reason $reason");
+          if (state == RemoteVideoState.remoteVideoStateDecoding || state == RemoteVideoState.remoteVideoStateStarting) {
+            if (mounted && _remoteUid != remoteUid) {
+              setState(() {
+                _remoteUid = remoteUid;
+              });
+            }
+          }
         },
         onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
           debugPrint("remote user $remoteUid left channel");
@@ -132,9 +163,6 @@ class _CallScreenState extends State<CallScreen> {
           });
           // Customer left
           _endCall();
-        },
-        onError: (ErrorCodeType err, String msg) {
-          debugPrint("Expert Agora RTC Error code: $err, message: $msg");
         },
       ),
     );
@@ -150,6 +178,7 @@ class _CallScreenState extends State<CallScreen> {
     
     if (widget.callType == 'video') {
       await _engine!.enableVideo();
+      await _engine!.enableLocalVideo(true);
       await _engine!.startPreview();
     } else {
       await _engine!.disableVideo();
@@ -172,6 +201,7 @@ class _CallScreenState extends State<CallScreen> {
         publishCameraTrack: widget.callType == 'video',
         autoSubscribeAudio: true,
         autoSubscribeVideo: widget.callType == 'video',
+        enableAudioRecordingOrPlayout: true,
       ),
     );
 
