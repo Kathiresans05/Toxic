@@ -1316,11 +1316,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => _showExpertQuickCallSheet(context, expert),
           borderRadius: BorderRadius.circular(22),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _cardBorder.withValues(alpha: 0.7),
                 width: 1.0,
@@ -1328,8 +1328,8 @@ class _HomeScreenState extends State<HomeScreen> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -1344,18 +1344,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     Stack(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(2.5),
+                          padding: const EdgeInsets.all(2.0),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isOnline
                                   ? const Color(0xFF10B981).withValues(alpha: 0.6)
                                   : Colors.grey.shade300,
-                              width: 2.0,
+                              width: 1.8,
                             ),
                           ),
                           child: CircleAvatar(
-                            radius: 27,
+                            radius: 23,
                             backgroundColor: const Color(0xFFF1F5F9),
                             backgroundImage: avatar.isNotEmpty
                                 ? NetworkImage(avatar)
@@ -1372,7 +1372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w900,
-                                          fontSize: 20,
+                                          fontSize: 17,
                                         ),
                                       ),
                                     ),
@@ -1381,11 +1381,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Positioned(
-                          right: 2,
-                          bottom: 2,
+                          right: 1,
+                          bottom: 1,
                           child: Container(
-                            width: 14,
-                            height: 14,
+                            width: 12,
+                            height: 12,
                             decoration: BoxDecoration(
                               color: isOnline
                                   ? const Color(0xFF10B981)
@@ -1393,14 +1393,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: Colors.white,
-                                width: 2.5,
+                                width: 2.0,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     // Creator Name, Headline & Tags
                     Expanded(
                       child: Column(
@@ -1413,9 +1413,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   name,
                                   style: const TextStyle(
                                     color: Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 17,
-                                    letterSpacing: -0.3,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15.5,
+                                    letterSpacing: -0.2,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1423,83 +1423,83 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               if (isElite) ...[
                                 const SizedBox(width: 4),
-                                const Text('👑', style: TextStyle(fontSize: 12)),
+                                const Text('👑', style: TextStyle(fontSize: 11)),
                               ] else if (isVerified) ...[
                                 const SizedBox(width: 4),
                                 const Icon(
                                   Icons.verified_rounded,
                                   color: _brandGreen,
-                                  size: 15,
+                                  size: 14,
                                 ),
                               ],
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1.5),
                           Text(
                             headline,
                             style: const TextStyle(
                               color: Color(0xFF64748B),
-                              fontSize: 12.5,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4.5),
                           Row(
                             children: [
                               // Online status pill
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
+                                  horizontal: 7,
+                                  vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isOnline
                                       ? const Color(0xFFD1FAE5)
                                       : const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     CircleAvatar(
-                                      radius: 3,
+                                      radius: 2.5,
                                       backgroundColor: isOnline
                                           ? const Color(0xFF10B981)
                                           : const Color(0xFF94A3B8),
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: 3.5),
                                     Text(
                                       isOnline ? 'Online' : 'Offline',
                                       style: TextStyle(
                                         color: isOnline
                                             ? const Color(0xFF059669)
                                             : const Color(0xFF64748B),
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 5),
                               // Languages pill
                               Flexible(
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                    horizontal: 7,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFEF3C7).withValues(alpha: 0.65),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     languages,
                                     style: const TextStyle(
                                       color: Color(0xFF475569),
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                     ),
                                     maxLines: 1,
@@ -1512,16 +1512,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     // Rating Pill Badge (Top Right)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 6.5,
+                        vertical: 2.5,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1529,14 +1529,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Icon(
                             Icons.star_rounded,
                             color: Color(0xFFD97706),
-                            size: 15,
+                            size: 13,
                           ),
-                          const SizedBox(width: 3),
+                          const SizedBox(width: 2.5),
                           Text(
                             rating.toStringAsFixed(1),
                             style: const TextStyle(
                               color: Color(0xFF92400E),
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -1546,13 +1546,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 const Divider(
                   height: 1,
-                  thickness: 1,
+                  thickness: 0.8,
                   color: Color(0xFFF1F5F9),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Bottom section: Price on Left, Call & Video Buttons on Right
                 Row(
@@ -1570,7 +1570,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 text: '₹${rate.toInt() == rate ? rate.toInt() : rate.toStringAsFixed(1)}',
                                 style: const TextStyle(
                                   color: Color(0xFF0F172A),
-                                  fontSize: 18,
+                                  fontSize: 16.5,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -0.3,
                                 ),
@@ -1579,19 +1579,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 text: '/min',
                                 style: TextStyle(
                                   color: Color(0xFF64748B),
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 1),
                         Text(
                           'Video: ₹${videoRate.toInt() == videoRate ? videoRate.toInt() : videoRate.toStringAsFixed(0)}/min',
                           style: const TextStyle(
                             color: Color(0xFF64748B),
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1621,23 +1620,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8.5,
+                              horizontal: 13,
+                              vertical: 7,
                             ),
                             decoration: BoxDecoration(
                               color: isOnline
                                   ? const Color(0xFF0D5D43)
                                   : const Color(0xFFCBD5E1),
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: isOnline
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFF0D5D43).withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
+                                        color: const Color(0xFF0D5D43).withValues(alpha: 0.25),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ]
                                   : null,
@@ -1650,22 +1649,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ? Icons.call_rounded
                                       : Icons.phone_disabled_rounded,
                                   color: Colors.white,
-                                  size: 14,
+                                  size: 13,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 5),
                                 const Text(
                                   'Call',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 13,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
 
                         // Video button
                         InkWell(
@@ -1686,23 +1685,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8.5,
+                              horizontal: 13,
+                              vertical: 7,
                             ),
                             decoration: BoxDecoration(
                               color: isOnline
                                   ? const Color(0xFF0E3E4D)
                                   : const Color(0xFFCBD5E1),
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: isOnline
                                   ? [
                                       BoxShadow(
-                                        color: const Color(0xFF0E3E4D).withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
+                                        color: const Color(0xFF0E3E4D).withValues(alpha: 0.25),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ]
                                   : null,
@@ -1715,15 +1714,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ? Icons.videocam_rounded
                                       : Icons.videocam_off_rounded,
                                   color: Colors.white,
-                                  size: 15,
+                                  size: 14,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 5),
                                 const Text(
                                   'Video',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 13,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
