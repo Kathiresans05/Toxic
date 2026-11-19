@@ -47,35 +47,25 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFFFFBF7),
           border: Border(
             top: BorderSide(
-              color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFFDE68A),
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFF5DFC9),
               width: 1.2,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFFD97706).withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF6E431E).withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -3),
             )
           ],
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 60,
+            height: 62,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -124,27 +114,36 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   }) {
     final isSelected = _currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedColor = isDark ? Colors.grey.shade500 : const Color(0xFF64748B);
-    final color = isSelected ? const Color(0xFF7C3AED) : unselectedColor;
+    final unselectedColor = isDark ? Colors.grey.shade500 : const Color(0xFF8B7E74);
+    final color = isSelected ? const Color(0xFF0C4F3E) : unselectedColor;
     final displayIcon = (isSelected && selectedIcon != null) ? selectedIcon : icon;
 
     return Expanded(
       child: InkWell(
         onTap: () => _onTabTapped(index),
-        splashColor: AppTheme.primary.withValues(alpha: 0.1),
+        splashColor: const Color(0xFF0C4F3E).withValues(alpha: 0.08),
         highlightColor: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(displayIcon, color: color, size: 22),
-            const SizedBox(height: 3),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? (isDark ? const Color(0xFF0C4F3E).withValues(alpha: 0.4) : const Color(0xFF0C4F3E).withValues(alpha: 0.1))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(displayIcon, color: color, size: 22),
+            ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: color,
                 fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
               ),
             ),
           ],

@@ -140,46 +140,47 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = Theme.of(context).colorScheme.onSurface;
-    final cardBg = Theme.of(context).cardColor;
-    final borderColor = isDark ? Colors.white12 : AppTheme.lightCardBorder;
+    final textColor = isDark ? Colors.white : const Color(0xFF0B3543);
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFF5DFC9);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFFEE8D1),
       appBar: AppBar(
-        title: const Text('Calls & Favorites', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white)),
+        title: const Text(
+          'Calls & Favorites',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white, letterSpacing: 0.2),
+        ),
         centerTitle: false,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF312E81)],
+              colors: [Color(0xFF0C4F3E), Color(0xFF073328)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(54),
+          preferredSize: const Size.fromHeight(56),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            padding: const EdgeInsets.all(3.5),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
-                ),
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -187,8 +188,8 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
+              labelColor: const Color(0xFF0C4F3E),
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
               labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
               tabs: const [
                 Tab(
@@ -205,7 +206,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.favorite_rounded, size: 16, color: Color(0xFFFB7185)),
+                      Icon(Icons.favorite_rounded, size: 16, color: Color(0xFFE11D48)),
                       SizedBox(width: 6),
                       Text('Saved Favorites'),
                     ],
@@ -218,32 +219,14 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
       ),
       body: Stack(
         children: [
-          // Luxury Eye-friendly Soft Pastel Sunset Gradient Background
+          // Warm Apricot Peach Background matching Login & Dashboard
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
-                gradient: isDark
-                    ? const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)],
-                      )
-                    : const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xFFDDD6FE), // Soft Lavender
-                          Color(0xFFF0ABFC), // Blushed Orchid Pink
-                          Color(0xFFFDA4AF), // Soft Coral Rosé
-                          Color(0xFFFDBA74), // Warm Sunset Peach
-                          Color(0xFFFCD34D), // Warm Amber Glow
-                        ],
-                        stops: [0.0, 0.25, 0.50, 0.75, 1.0],
-                      ),
-              ),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFFEE8D1),
             ),
           ),
           RefreshIndicator(
+            color: const Color(0xFF0C4F3E),
             onRefresh: _loadAllData,
             child: TabBarView(
               controller: _tabController,
@@ -260,41 +243,80 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
 
   Widget _buildCallHistoryTab(bool isDark, Color textColor, Color cardBg, Color borderColor) {
     if (_isLoadingHistory) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF0C4F3E)));
     }
 
     if (_liveCallHistory.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.phone_missed_rounded, size: 64, color: isDark ? Colors.white24 : Colors.black26),
-              const SizedBox(height: 16),
-              Text('No Call History Yet', style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text(
-                'Your completed consultation calls with experts will be recorded here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                  );
-                },
-                icon: const Icon(Icons.call_rounded, size: 16, color: Colors.black),
-                label: const Text('Browse Online Experts', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFF5DFC9)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0C4F3E).withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.phone_missed_rounded, size: 48, color: Color(0xFF0C4F3E)),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'No Call History Yet',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0B3543),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your completed consultation calls with experts will be recorded here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark ? Colors.grey : const Color(0xFF64748B),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.call_rounded, size: 16, color: Colors.white),
+                  label: const Text(
+                    'Browse Online Experts',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0C4F3E),
+                    elevation: 3,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -319,27 +341,25 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF5DFC9)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 22,
-                backgroundColor: AppTheme.primary.withValues(alpha: 0.25),
+                radius: 24,
+                backgroundColor: const Color(0xFF0C4F3E).withValues(alpha: 0.12),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 16),
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0C4F3E), fontSize: 17),
                 ),
               ),
               const SizedBox(width: 12),
@@ -349,14 +369,18 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                   children: [
                     Text(
                       name,
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0B3543),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       role,
-                      style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 12),
+                      style: TextStyle(color: isDark ? Colors.grey : const Color(0xFF64748B), fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -383,7 +407,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                 children: [
                   Text(
                     amount,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFD97706)),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFFC89153)),
                   ),
                   const SizedBox(height: 6),
                   InkWell(
@@ -393,19 +417,26 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                         MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
                       );
                     },
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(18),
+                        color: const Color(0xFF0C4F3E),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0C4F3E).withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.call_rounded, size: 12, color: Colors.black),
+                          Icon(Icons.call_rounded, size: 12, color: Colors.white),
                           SizedBox(width: 4),
-                          Text('Call Again', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('Call Again', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -421,26 +452,60 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
 
   Widget _buildFavoritesTab(bool isDark, Color textColor, Color cardBg, Color borderColor) {
     if (_isLoadingExperts) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF0C4F3E)));
     }
 
     if (_onlineExperts.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.favorite_border_rounded, size: 64, color: isDark ? Colors.white24 : Colors.black26),
-              const SizedBox(height: 16),
-              Text('No Experts Currently Online', style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text(
-                'When registered experts come online, they will appear here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 13),
-              ),
-            ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFF5DFC9)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE11D48).withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.favorite_border_rounded, size: 48, color: Color(0xFFE11D48)),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'No Experts Currently Online',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0B3543),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'When registered experts come online, they will appear here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark ? Colors.grey : const Color(0xFF64748B),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -474,13 +539,13 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF131823) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0)),
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF5DFC9)),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF4338CA).withValues(alpha: 0.08),
-                blurRadius: 12,
+                color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                blurRadius: 14,
                 offset: const Offset(0, 4),
               )
             ],
@@ -489,27 +554,12 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
             children: [
               Stack(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      gradient: _getAvatarGradient(name),
-                      shape: BoxShape.circle,
-                    ),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: _getAvatarGradient(name),
-                        ),
-                        child: Center(
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                            style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 17),
-                          ),
-                        ),
-                      ),
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFF0C4F3E).withValues(alpha: 0.12),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                      style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF0C4F3E), fontSize: 17),
                     ),
                   ),
                   Positioned(
@@ -537,7 +587,11 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                         Flexible(
                           child: Text(
                             name,
-                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0B3543),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -548,7 +602,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                           child: Icon(
                             isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                             size: 17,
-                            color: Colors.redAccent,
+                            color: const Color(0xFFE11D48),
                           ),
                         ),
                       ],
@@ -556,23 +610,27 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                     const SizedBox(height: 2),
                     Text(
                       headline,
-                      style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 12),
+                      style: TextStyle(color: isDark ? Colors.grey : const Color(0xFF64748B), fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
+                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFE5A93B)),
                         const SizedBox(width: 3),
                         Text(
                           rating,
-                          style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0B3543),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '₹$rate/min',
-                          style: const TextStyle(color: Color(0xFFD97706), fontSize: 11, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Color(0xFFC89153), fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -597,16 +655,23 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary,
+                    color: const Color(0xFF0C4F3E),
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0C4F3E).withValues(alpha: 0.25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.call_rounded, size: 14, color: Colors.black),
+                      Icon(Icons.call_rounded, size: 13, color: Colors.white),
                       SizedBox(width: 4),
-                      Text('Call', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text('Call', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                     ],
                   ),
                 ),

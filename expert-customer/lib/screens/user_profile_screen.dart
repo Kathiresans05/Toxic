@@ -29,339 +29,488 @@ class UserProfileScreen extends StatelessWidget {
 
     final bool isVip = user['isVip'] == true;
 
-    final textColor = Theme.of(context).colorScheme.onSurface;
-    final iconColor = isDark ? Colors.white70 : AppTheme.lightTextSecondary;
+    final textColor = isDark ? Colors.white : const Color(0xFF0B3543);
+    final iconColor = const Color(0xFF0C4F3E);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFFEE8D1),
       body: Stack(
         children: [
-          // Luxury Eye-friendly Soft Pastel Sunset Gradient Background
+          // Warm Apricot Peach Background matching Login & Dashboard
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
-                gradient: isDark
-                    ? const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)],
-                      )
-                    : const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xFFDDD6FE), // Soft Lavender
-                          Color(0xFFF0ABFC), // Blushed Orchid Pink
-                          Color(0xFFFDA4AF), // Soft Coral Rosé
-                          Color(0xFFFDBA74), // Warm Sunset Peach
-                          Color(0xFFFCD34D), // Warm Amber Glow
-                        ],
-                        stops: [0.0, 0.25, 0.50, 0.75, 1.0],
-                      ),
-              ),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFFEE8D1),
             ),
           ),
           SafeArea(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-              // Header Card
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                padding: const EdgeInsets.only(top: 20, bottom: 35, left: 24, right: 24),
-                child: Column(
-                  children: [
-                    Row(
+                  // Top Executive Header Card in Deep Emerald Green
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0C4F3E), Color(0xFF073328)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF073328).withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.only(top: 20, bottom: 28, left: 20, right: 20),
+                    child: Column(
                       children: [
-                        Stack(
+                        Row(
                           children: [
-                            CircleAvatar(
-                              radius: 35,
-                              backgroundColor: Colors.black12,
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+                            Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 34,
+                                  backgroundColor: Colors.white,
+                                  child: Text(
+                                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0C4F3E),
+                                    ),
+                                  ),
+                                ),
+                                if (isVip)
+                                  const Positioned(
+                                    top: -2,
+                                    right: -2,
+                                    child: Text('👑', style: TextStyle(fontSize: 20)),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (isVip) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE5A93B),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.star, color: Colors.black, size: 12),
+                                              SizedBox(width: 3),
+                                              Text(
+                                                'VIP',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ]
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    mobile,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            if (isVip)
-                              const Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Text('👑', style: TextStyle(fontSize: 22)),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
                               ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                                  color: const Color(0xFFE5A93B),
+                                  size: 20,
+                                ),
+                                tooltip: 'Switch Theme',
+                                onPressed: () {
+                                  themeProvider.toggleTheme();
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
+                                tooltip: 'Refresh Profile',
+                                onPressed: () {
+                                  authProvider.refreshProfile();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Profile refreshed from database')),
+                                  );
+                                },
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 20),
+                        // Wallet Balance Banner in Frosted Glass
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Row(
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                  const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFE5A93B), size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Wallet Balance:',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                  if (isVip) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.star, color: Color(0xFFFFD54F), size: 12),
-                                          SizedBox(width: 3),
-                                          Text('VIP', style: TextStyle(color: Color(0xFFFFD54F), fontSize: 11, fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                    ),
-                                  ]
                                 ],
                               ),
-                              const SizedBox(height: 4),
                               Text(
-                                mobile,
-                                style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
+                                '₹ ${walletBalance.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Color(0xFFE5A93B),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                            color: Colors.black,
-                          ),
-                          tooltip: 'Switch Theme',
-                          onPressed: () {
-                            themeProvider.toggleTheme();
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh, color: Colors.black),
-                          tooltip: 'Refresh Profile',
-                          onPressed: () {
-                            authProvider.refreshProfile();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Profile refreshed from database')),
-                            );
-                          },
-                        )
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    // Balance info chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // VIP Pass Upgrade Banner
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(15),
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF5DFC9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Wallet Balance:', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-                          Text(
-                            '₹ ${walletBalance.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE5A93B).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Text('👑', style: TextStyle(fontSize: 26)),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isVip ? 'VIP Membership Active 🎉' : 'Become a VIP Member',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0B3543),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  isVip ? '10% Extra Wallet Bonus & VIP Badge Active' : 'Get 10% Extra Bonus on Recharges for ₹199/mo',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.grey : const Color(0xFF64748B),
+                                    fontSize: 11,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              _showVipUpgradeDialog(context, authProvider, isVip);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0C4F3E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text(
+                              isVip ? 'Manage' : 'Join VIP',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 15),
+                  ),
+                  const SizedBox(height: 16),
 
-              // VIP Pass Upgrade Banner
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? const [Color(0xFF2C2405), Color(0xFF141418)]
-                          : const [Color(0xFFFFF8E7), Color(0xFFFFF0DC)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                  // Menu Section 1: Account & Activities
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF5DFC9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.person_outline_rounded,
+                            title: 'My Profile',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              _showProfileDetailsDialog(context, name, mobile, referralCode, role, walletBalance);
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.account_balance_wallet_outlined,
+                            title: 'Wallet',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletHomeScreen()));
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.history_rounded,
+                            title: 'Call & Transaction History',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.favorite_outline_rounded,
+                            title: 'My Favorites',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const FavoritesScreen()));
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.5)),
                   ),
-                  child: Row(
-                    children: [
-                      const Text('👑', style: TextStyle(fontSize: 36)),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isVip ? 'VIP Membership Active 🎉' : 'Become a VIP Member',
-                              style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isVip ? 'Enjoy 10% Extra Wallet Bonus & VIP Badge!' : 'Get 10% Extra Bonus on Recharges for ₹199/mo',
-                              style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 12),
-                            ),
-                          ],
-                        ),
+                  const SizedBox(height: 14),
+
+                  // Menu Section 2: Preferences & Settings
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF5DFC9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          _showVipUpgradeDialog(context, authProvider, isVip);
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.card_giftcard_rounded,
+                            title: 'Refer & Earn',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ReferralProgramScreen()));
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.notifications_outlined,
+                            title: 'Notifications',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.translate_rounded,
+                            title: 'My Preferred Languages',
+                            iconColor: iconColor,
+                            titleColor: textColor,
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()));
+                            },
+                          ),
+                          _buildDivider(isDark),
+                          // Theme Switch Tile inside Card
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0C4F3E).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                isDark ? Icons.brightness_2_outlined : Icons.wb_sunny_outlined,
+                                color: const Color(0xFF0C4F3E),
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              'App Theme',
+                              style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                            subtitle: Text(
+                              isDark ? 'Dark Mode (Active)' : 'Light Cream Mode (Active)',
+                              style: TextStyle(color: isDark ? Colors.grey : const Color(0xFF64748B), fontSize: 12),
+                            ),
+                            trailing: Switch(
+                              value: !isDark,
+                              activeColor: const Color(0xFF0C4F3E),
+                              onChanged: (val) {
+                                themeProvider.toggleTheme();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Menu Section 3: Logout
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF5DFC9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _buildMenuItem(
+                        context,
+                        icon: Icons.logout_rounded,
+                        title: 'Logout',
+                        titleColor: const Color(0xFFDC2626),
+                        iconColor: const Color(0xFFDC2626),
+                        onTap: () async {
+                          await authProvider.logout();
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD54F),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        ),
-                        child: Text(
-                          isVip ? 'Manage' : 'Join VIP',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 15),
-
-              // Menu Items
-              _buildMenuItem(
-                context,
-                icon: Icons.person_outline,
-                title: 'My Profile',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  _showProfileDetailsDialog(context, name, mobile, referralCode, role, walletBalance);
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Wallet',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletHomeScreen()));
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.history,
-                title: 'Call & Transaction History',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.favorite_outline,
-                title: 'My Favorites',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const FavoritesScreen()));
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.card_giftcard,
-                title: 'Refer & Earn',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ReferralProgramScreen()));
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.notifications_outlined,
-                title: 'Notifications',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.translate_rounded,
-                title: 'My Preferred Languages',
-                iconColor: iconColor,
-                titleColor: textColor,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()));
-                },
-              ),
-
-              // Theme Switch Menu Item
-              ListTile(
-                leading: Icon(
-                  isDark ? Icons.brightness_2_outlined : Icons.wb_sunny_outlined,
-                  color: isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706),
-                ),
-                title: Text(
-                  'App Theme',
-                  style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                subtitle: Text(
-                  isDark ? 'Dark Mode (Active)' : 'Light Cream Mode (Active)',
-                  style: TextStyle(color: isDark ? Colors.grey : AppTheme.lightTextSecondary, fontSize: 12),
-                ),
-                trailing: Switch(
-                  value: !isDark,
-                  activeThumbColor: AppTheme.primary,
-                  onChanged: (val) {
-                    themeProvider.toggleTheme();
-                  },
-                ),
-              ),
-
-              _buildMenuItem(
-                context,
-                icon: Icons.logout,
-                title: 'Logout',
-                titleColor: Colors.redAccent,
-                iconColor: Colors.redAccent,
-                onTap: () async {
-                  await authProvider.logout();
-                  if (!context.mounted) return;
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-                  );
-                },
-              ),
-              const SizedBox(height: 30),
-            ],
+            ),
           ),
-        ),
-      ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDivider(bool isDark) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 64,
+      endIndent: 16,
+      color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF5DFC9).withValues(alpha: 0.6),
     );
   }
 
@@ -370,14 +519,38 @@ class UserProfileScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    Color iconColor = Colors.white70,
-    Color titleColor = Colors.white,
+    Color iconColor = const Color(0xFF0C4F3E),
+    Color titleColor = const Color(0xFF0B3543),
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDestructive = titleColor == const Color(0xFFDC2626);
+
     return ListTile(
-      leading: Icon(icon, color: iconColor),
-      title: Text(title, style: TextStyle(color: titleColor, fontSize: 16, fontWeight: FontWeight.w500)),
-      trailing: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white38 : Colors.black38, size: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDestructive
+              ? const Color(0xFFDC2626).withValues(alpha: 0.08)
+              : const Color(0xFF0C4F3E).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: titleColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios_rounded,
+        color: isDark ? Colors.white30 : const Color(0xFFC89153),
+        size: 14,
+      ),
       onTap: onTap,
     );
   }
@@ -415,7 +588,7 @@ class UserProfileScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: AppTheme.secondary)),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF0C4F3E), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -494,11 +667,15 @@ class UserProfileScreen extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD54F),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: const Color(0xFF0C4F3E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: Text(isVip ? 'Cancel VIP' : 'Activate VIP (₹199)', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              isVip ? 'Cancel VIP' : 'Activate VIP (₹199)',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
           ),
         ],
       ),
