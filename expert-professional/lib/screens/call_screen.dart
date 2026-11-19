@@ -49,6 +49,8 @@ class _CallScreenState extends State<CallScreen> {
   RtcEngine? _engine;
   int? _remoteUid;
   int? _dataStreamId;
+  String _agoraStatus = 'Connecting...';
+  bool _fallbackTried = false;
 
   String _privacyMode = 'normal';
   double _blurStrength = 15.0;
@@ -91,87 +93,134 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _initAgora() async {
-    final micStatus = await Permission.microphone.request();
-    if (widget.callType == 'video') {
-      await Permission.camera.request();
-    }
-    debugPrint('Expert Microphone permission status: $micStatus');
+    try {
+      final micStatus = await Permission.microphone.request();
+      if (widget.callType == 'video') {
+        await Permission.camera.request();
+      }
+      debugPrint('Expert Microphone permission status: $micStatus');
 
-    _engine = createAgoraRtcEngine();
-    await _engine!.initialize(const RtcEngineContext(
-      appId: appId,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-    ));
+      _engine = createAgoraRtcEngine();
+      await _engine!.initialize(const RtcEngineContext(
+        appId: appId,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+      ));
 
-    _dataStreamId = await _engine!.createDataStream(const DataStreamConfig(
-      syncWithAudio: true,
-      ordered: true,
-    ));
-
-    _engine!.registerEventHandler(
-      RtcEngineEventHandler(
-        onError: (ErrorCodeType err, String msg) {
-          debugPrint("Expert Agora RTC Error code: $err, message: $msg");
-        },
-        onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
-          debugPrint("Expert Agora Connection State: $state, reason: $reason");
-        },
-        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("Expert local user ${connection.localUid} joined successfully in channel: ${connection.channelId}");
-          _engine?.setEnableSpeakerphone(true);
-          _engine?.adjustPlaybackSignalVolume(100);
-          _engine?.adjustRecordingSignalVolume(100);
-          _engine?.muteLocalAudioStream(false);
-          _engine?.muteAllRemoteAudioStreams(false);
-        },
-        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("Expert remote user $remoteUid joined successfully in channel: ${connection.channelId}");
-          _engine?.setEnableSpeakerphone(true);
-          _engine?.adjustPlaybackSignalVolume(100);
-          _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
-          if (mounted) {
-            setState(() {
-              _remoteUid = remoteUid;
-            });
-          }
-        },
-        onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
-          debugPrint("Expert Remote Audio state: uid $remoteUid, state $state, reason $reason");
-          if (state == RemoteAudioState.remoteAudioStateDecoding || state == RemoteAudioState.remoteAudioStateStarting) {
+      _engine!.registerEventHandler(
+        RtcEngineEventHandler(
+          onError: (ErrorCodeType err, String msg) async {
+            debugPrint("Expert Agora RTC Error code: $err, message: $msg");
+            if (mounted) {
+              setState(() {
+                _agoraStatus = 'Error $err';
+              });
+            }
+            if (!_fallbackTried &&
+                (err == ErrorCodeType.errInvalidToken ||
+                 err == ErrorCodeType.errTokenExpired ||
+                 err == ErrorCodeType.errInvalidChannelName)) {
+              _fallbackTried = true;
+              debugPrint("Expert retrying Agora joinChannel with empty token...");
+              if (mounted) {
+                setState(() {
+                  _agoraStatus = 'Connecting (fallback)...';
+                });
+              }
+              try {
+                await _engine?.leaveChannel();
+                await _engine?.joinChannel(
+                  token: '',
+                  channelId: widget.channelName,
+                  uid: 0,
+                  options: ChannelMediaOptions(
+                    clientRoleType: ClientRoleType.clientRoleBroadcaster,
+                    publishMicrophoneTrack: true,
+                    publishCameraTrack: widget.callType == 'video',
+                    autoSubscribeAudio: true,
+                    autoSubscribeVideo: widget.callType == 'video',
+                    enableAudioRecordingOrPlayout: true,
+                  ),
+                );
+              } catch (e) {
+                debugPrint("Expert fallback joinChannel error: $e");
+              }
+            }
+          },
+          onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
+            debugPrint("Expert Agora Connection State: $state, reason: $reason");
+          },
+          onJoinChannelSuccess: (RtcConnection connection, int elapsed) async {
+            debugPrint("Expert local user ${connection.localUid} joined successfully in channel: ${connection.channelId}");
+            try {
+              _dataStreamId = await _engine?.createDataStream(const DataStreamConfig(
+                syncWithAudio: true,
+                ordered: true,
+              ));
+            } catch (e) {
+              debugPrint("Expert createDataStream non-fatal error: $e");
+            }
+            _engine?.setEnableSpeakerphone(true);
+            _engine?.adjustPlaybackSignalVolume(100);
+            _engine?.adjustRecordingSignalVolume(100);
+            _engine?.muteLocalAudioStream(false);
+            _engine?.muteAllRemoteAudioStreams(false);
+            if (mounted) {
+              setState(() {
+                _agoraStatus = _remoteUid != null ? 'Voice Connected (Live)' : 'Connected, waiting for customer...';
+              });
+            }
+          },
+          onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+            debugPrint("Expert remote user $remoteUid joined successfully in channel: ${connection.channelId}");
             _engine?.setEnableSpeakerphone(true);
             _engine?.adjustPlaybackSignalVolume(100);
             _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
-            if (mounted && _remoteUid == null) {
+            if (mounted) {
               setState(() {
                 _remoteUid = remoteUid;
+                _agoraStatus = 'Voice Connected (Live)';
               });
             }
-          }
-        },
-        onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-          debugPrint("Expert Remote Video state: uid $remoteUid, state $state, reason $reason");
-          if (state == RemoteVideoState.remoteVideoStateDecoding || state == RemoteVideoState.remoteVideoStateStarting) {
-            if (mounted && _remoteUid != remoteUid) {
-              setState(() {
-                _remoteUid = remoteUid;
-              });
+          },
+          onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
+            debugPrint("Expert Remote Audio state: uid $remoteUid, state $state, reason $reason");
+            if (state == RemoteAudioState.remoteAudioStateDecoding || state == RemoteAudioState.remoteAudioStateStarting) {
+              _engine?.setEnableSpeakerphone(true);
+              _engine?.adjustPlaybackSignalVolume(100);
+              _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
+              if (mounted && _remoteUid == null) {
+                setState(() {
+                  _remoteUid = remoteUid;
+                  _agoraStatus = 'Voice Connected (Live)';
+                });
+              }
             }
-          }
-        },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("remote user $remoteUid left channel");
-          setState(() {
-            _remoteUid = null;
-          });
-          // Customer left
-          _endCall();
-        },
-      ),
-    );
+          },
+          onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
+            debugPrint("Expert Remote Video state: uid $remoteUid, state $state, reason $reason");
+            if (state == RemoteVideoState.remoteVideoStateDecoding || state == RemoteVideoState.remoteVideoStateStarting) {
+              if (mounted && _remoteUid != remoteUid) {
+                setState(() {
+                  _remoteUid = remoteUid;
+                });
+              }
+            }
+          },
+          onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+            debugPrint("remote user $remoteUid left channel");
+            setState(() {
+              _remoteUid = null;
+              _agoraStatus = 'Customer disconnected';
+            });
+            // Customer left
+            _endCall();
+          },
+        ),
+      );
 
     await _engine!.setAudioProfile(
       profile: AudioProfileType.audioProfileSpeechStandard,
-      scenario: AudioScenarioType.audioScenarioGameStreaming,
+      scenario: AudioScenarioType.audioScenarioDefault,
     );
     await _engine!.enableAudio();
     await _engine!.enableLocalAudio(true);
@@ -197,24 +246,41 @@ class _CallScreenState extends State<CallScreen> {
     }
     debugPrint('Expert joining Agora channel: ${widget.channelName} with token length: ${token.length}');
 
-    await _engine!.joinChannel(
-      token: token,
-      channelId: widget.channelName,
-      uid: 0,
-      options: ChannelMediaOptions(
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-        publishMicrophoneTrack: true,
-        publishCameraTrack: widget.callType == 'video',
-        autoSubscribeAudio: true,
-        autoSubscribeVideo: widget.callType == 'video',
-        enableAudioRecordingOrPlayout: true,
-      ),
-    );
+    try {
+      await _engine!.joinChannel(
+        token: token,
+        channelId: widget.channelName,
+        uid: 0,
+        options: ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          publishMicrophoneTrack: true,
+          publishCameraTrack: widget.callType == 'video',
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: widget.callType == 'video',
+          enableAudioRecordingOrPlayout: true,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Expert joinChannel exception: $e");
+      if (mounted) {
+        setState(() {
+          _agoraStatus = 'Join Error: $e';
+        });
+      }
+    }
 
     await _engine!.setEnableSpeakerphone(true);
     await _engine!.adjustRecordingSignalVolume(100);
     await _engine!.adjustPlaybackSignalVolume(100);
+  } catch (e, stack) {
+    debugPrint("Expert _initAgora general error: $e\n$stack");
+    if (mounted) {
+      setState(() {
+        _agoraStatus = 'Init Error: $e';
+      });
+    }
   }
+}
 
   Future<void> _fetchCommission() async {
     final settings = await ApiService().getSettings();
@@ -800,6 +866,57 @@ class _CallScreenState extends State<CallScreen> {
                   const Text(
                     'Relationship • English',
                     style: TextStyle(color: Color(0xFF8A8A93), fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
+                              ? Colors.red.withValues(alpha: 0.2) 
+                              : Colors.amber.withValues(alpha: 0.2)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
+                            ? Colors.greenAccent
+                            : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
+                                ? Colors.redAccent 
+                                : Colors.amberAccent),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
+                              ? Icons.record_voice_over_rounded
+                              : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
+                                  ? Icons.error_outline 
+                                  : Icons.sync_rounded),
+                          size: 12,
+                          color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
+                              ? Colors.greenAccent
+                              : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
+                                  ? Colors.redAccent 
+                                  : Colors.amberAccent),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _agoraStatus,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
+                                ? Colors.greenAccent
+                                : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
+                                    ? Colors.redAccent 
+                                    : Colors.amberAccent),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
