@@ -217,6 +217,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         CallNotificationService().hideBanner();
                         RingtoneService().stopRingtone();
                         CallService().acceptCall(widget.callId);
+                        if (widget.callerId != null && widget.callerId!.isNotEmpty) {
+                          SocketService().sendEvent('CALL_ACCEPTED', {
+                            'callId': widget.callId,
+                            'targetUserId': widget.callerId,
+                            'channelName': widget.channelName,
+                            'agoraToken': widget.agoraToken,
+                          });
+                        }
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(

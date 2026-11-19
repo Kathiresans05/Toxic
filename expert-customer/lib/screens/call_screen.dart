@@ -50,6 +50,7 @@ class _CallScreenState extends State<CallScreen> {
   String _expertPrivacyMode = 'normal';
 
   String? _channelName;
+  String? _customerId;
 
   @override
   void initState() {
@@ -101,13 +102,20 @@ class _CallScreenState extends State<CallScreen> {
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           debugPrint("Customer remote user $remoteUid joined successfully in channel: ${connection.channelId}");
+          _ringTimeoutTimer?.cancel();
+          FlutterRingtonePlayer().stop();
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
           if (mounted) {
             setState(() {
               _remoteUid = remoteUid;
+              _status = 'Connected';
+              _isCallActive = true;
             });
+            if (_customerId != null && _customerId!.isNotEmpty) {
+              _startTimers(_customerId!, connection.channelId ?? _channelName ?? '');
+            }
           }
         },
         onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
@@ -202,6 +210,7 @@ class _CallScreenState extends State<CallScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user ?? {};
     final customerId = user['id'] ?? 'cust_1';
+    _customerId = customerId.toString();
     final customerName = user['name'] ?? 'Customer';
     final balance = double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
 
@@ -287,6 +296,9 @@ class _CallScreenState extends State<CallScreen> {
 
     final activeChannel = _channelName ?? channelName;
 
+    // Immediately connect Customer to Agora so they are in the channel ready when Creator attends
+    _initAgora(activeChannel, agoraToken);
+
     // Ping the backend to trigger FCM push notification to the expert
     _apiService.notifyCall(
       expertId: widget.expertId,
@@ -303,16 +315,18 @@ class _CallScreenState extends State<CallScreen> {
     SocketService().onCallAccepted = (data) {
       _ringTimeoutTimer?.cancel();
       FlutterRingtonePlayer().stop();
-      if (mounted && !_isCallActive) {
+      if (mounted) {
         setState(() {
           _status = 'Connected';
           _isCallActive = true;
         });
         final serverChannel = data['channelName']?.toString() ?? _channelName ?? channelName;
         final serverToken = data['agoraToken']?.toString() ?? agoraToken;
-        _channelName = serverChannel;
-        _initAgora(serverChannel, serverToken);
-        _startTimers(customerId, serverChannel);
+        if (serverChannel != _channelName) {
+          _channelName = serverChannel;
+          _initAgora(serverChannel, serverToken);
+        }
+        _startTimers(customerId, _channelName ?? serverChannel);
       }
     };
 
