@@ -1291,6 +1291,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   '5.0',
             ) ??
             5.0;
+        final videoRate =
+            double.tryParse(expert['videoRatePerMin']?.toString() ?? '') ??
+            (rate * 2.0);
         final expertId =
             (expert['id'] != null && expert['id'].toString().isNotEmpty)
             ? expert['id'].toString()
@@ -1309,326 +1312,430 @@ class _HomeScreenState extends State<HomeScreen> {
         final isElite = tier == 'ELITE';
         final isOnline = (expert['available'] ?? expert['isOnline']) == true;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: _cardBorder,
-              width: 1.2,
+        return InkWell(
+          onTap: () => _showExpertQuickCallSheet(context, expert),
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: _cardBorder.withValues(alpha: 0.7),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6E431E).withValues(alpha: 0.06),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Circle Avatar with live indicator
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      gradient: _getAvatarGradient(name),
-                      shape: BoxShape.circle,
-                    ),
-                    child: CircleAvatar(
-                      radius: 26,
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      backgroundImage: avatar.isNotEmpty
-                          ? NetworkImage(avatar)
-                          : null,
-                      child: avatar.isEmpty
-                          ? Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: _getAvatarGradient(name),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'E',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: isOnline
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFF94A3B8),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              // Creator Details
-              Expanded(
-                child: Column(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top section: Avatar, Info, and Star Rating Badge
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    // Dual-ring Avatar with Online Dot
+                    Stack(
                       children: [
-                        Flexible(
-                          child: Text(
-                            name,
+                        Container(
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isOnline
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                  : Colors.grey.shade300,
+                              width: 2.0,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 27,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            backgroundImage: avatar.isNotEmpty
+                                ? NetworkImage(avatar)
+                                : null,
+                            child: avatar.isEmpty
+                                ? Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: _getAvatarGradient(name),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        name.isNotEmpty ? name[0].toUpperCase() : 'E',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                        Positioned(
+                          right: 2,
+                          bottom: 2,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: isOnline
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFF94A3B8),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    // Creator Name, Headline & Tags
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 17,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isElite) ...[
+                                const SizedBox(width: 4),
+                                const Text('👑', style: TextStyle(fontSize: 12)),
+                              ] else if (isVerified) ...[
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  color: _brandGreen,
+                                  size: 15,
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            headline,
                             style: const TextStyle(
-                              color: _darkNavy,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15.5,
-                              letterSpacing: -0.2,
+                              color: Color(0xFF64748B),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (isElite) ...[
-                          const SizedBox(width: 5),
-                          const Text('👑', style: TextStyle(fontSize: 12)),
-                        ] else if (isVerified) ...[
-                          const SizedBox(width: 5),
-                          const Icon(
-                            Icons.verified_rounded,
-                            color: _brandGreen,
-                            size: 15,
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              // Online status pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isOnline
+                                      ? const Color(0xFFD1FAE5)
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 3,
+                                      backgroundColor: isOnline
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF94A3B8),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isOnline ? 'Online' : 'Offline',
+                                      style: TextStyle(
+                                        color: isOnline
+                                            ? const Color(0xFF059669)
+                                            : const Color(0xFF64748B),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Languages pill
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.65),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    languages,
+                                    style: const TextStyle(
+                                      color: Color(0xFF475569),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      headline,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
-                      runSpacing: 4,
+                    const SizedBox(width: 8),
+                    // Rating Pill Badge (Top Right)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFD97706),
+                            size: 15,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+                const SizedBox(height: 12),
+
+                // Bottom section: Price on Left, Call & Video Buttons on Right
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Price Details
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFF59E0B,
-                            ).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        RichText(
+                          text: TextSpan(
                             children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Color(0xFFF59E0B),
-                                size: 13,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '$rating',
+                              TextSpan(
+                                text: '₹${rate.toInt() == rate ? rate.toInt() : rate.toStringAsFixed(1)}',
                                 style: const TextStyle(
-                                  color: Color(0xFFD97706),
-                                  fontSize: 11,
+                                  color: Color(0xFF0F172A),
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: '/min',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(height: 1),
                         Text(
-                          '₹${rate.toStringAsFixed(0)}/min',
-                          style: TextStyle(
-                            color: isOnline
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF94A3B8),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12.5,
+                          'Video: ₹${videoRate.toInt() == videoRate ? videoRate.toInt() : videoRate.toStringAsFixed(0)}/min',
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        Text(
-                          '• $languages',
-                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      ],
+                    ),
+
+                    // Action Buttons (Call + Video capsule buttons side-by-side)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Call button
+                        InkWell(
+                          onTap: () {
+                            if (!isOnline) {
+                              _showOfflineCreatorModal(context, name);
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CallScreen(
+                                  expertName: name,
+                                  expertId: expertId,
+                                  pricePerMinute: rate,
+                                  callType: 'audio',
+                                ),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isOnline
+                                  ? const Color(0xFF0D5D43)
+                                  : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: isOnline
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF0D5D43).withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isOnline
+                                      ? Icons.call_rounded
+                                      : Icons.phone_disabled_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Call',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Video button
+                        InkWell(
+                          onTap: () {
+                            if (!isOnline) {
+                              _showOfflineCreatorModal(context, name);
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CallScreen(
+                                  expertName: name,
+                                  expertId: expertId,
+                                  pricePerMinute: videoRate,
+                                  callType: 'video',
+                                ),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isOnline
+                                  ? const Color(0xFF0E3E4D)
+                                  : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: isOnline
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF0E3E4D).withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isOnline
+                                      ? Icons.videocam_rounded
+                                      : Icons.videocam_off_rounded,
+                                  color: Colors.white,
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Video',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              // Call action buttons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      if (!isOnline) {
-                        _showOfflineCreatorModal(context, name);
-                        return;
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CallScreen(
-                            expertName: name,
-                            expertId: expertId,
-                            pricePerMinute: rate,
-                            callType: 'audio',
-                          ),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: isOnline
-                            ? const LinearGradient(
-                                colors: [_brandGreen, Color(0xFF136A54)],
-                              )
-                            : null,
-                        color: isOnline
-                            ? null
-                            : const Color(0xFFF1EDE6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: isOnline
-                            ? null
-                            : Border.all(
-                                color: const Color(0xFFE2D6C6),
-                              ),
-                        boxShadow: isOnline
-                            ? [
-                                BoxShadow(
-                                  color: _brandGreen.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isOnline
-                                ? Icons.call_rounded
-                                : Icons.phone_disabled_rounded,
-                            color: isOnline
-                                ? Colors.white
-                                : const Color(0xFF94A3B8),
-                            size: 14,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            isOnline ? 'Call' : 'Offline',
-                            style: TextStyle(
-                              color: isOnline
-                                  ? Colors.white
-                                  : const Color(0xFF94A3B8),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () {
-                      if (!isOnline) {
-                        _showOfflineCreatorModal(context, name);
-                        return;
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CallScreen(
-                            expertName: name,
-                            expertId: expertId,
-                            pricePerMinute: rate * 1.5,
-                            callType: 'video',
-                          ),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(9),
-                      decoration: BoxDecoration(
-                        gradient: isOnline
-                            ? const LinearGradient(
-                                colors: [_darkNavy, Color(0xFF144D5E)],
-                              )
-                            : null,
-                        color: isOnline
-                            ? null
-                            : const Color(0xFFF1EDE6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: isOnline
-                            ? null
-                            : Border.all(
-                                color: const Color(0xFFE2D6C6),
-                              ),
-                        boxShadow: isOnline
-                            ? [
-                                BoxShadow(
-                                  color: _darkNavy.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Icon(
-                        isOnline
-                            ? Icons.videocam_rounded
-                            : Icons.videocam_off_rounded,
-                        color: isOnline
-                            ? Colors.white
-                            : const Color(0xFF94A3B8),
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
