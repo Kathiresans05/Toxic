@@ -35,7 +35,7 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   final ApiService _apiService = ApiService();
-  
+
   Timer? _billingTimer;
   Timer? _durationTimer;
   Timer? _ringTimeoutTimer;
@@ -73,7 +73,9 @@ class _CallScreenState extends State<CallScreen> {
         debugPrint('Customer fetching Agora token fallback error: $e');
       }
     }
-    debugPrint('Customer joining Agora channel: $channelName with token length: ${token.length}');
+    debugPrint(
+      'Customer joining Agora channel: $channelName with token length: ${token.length}',
+    );
 
     final micStatus = await Permission.microphone.request();
     if (widget.callType == 'video') {
@@ -82,21 +84,32 @@ class _CallScreenState extends State<CallScreen> {
     debugPrint('Microphone permission status: $micStatus');
 
     _engine = createAgoraRtcEngine();
-    await _engine!.initialize(const RtcEngineContext(
-      appId: appId,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-    ));
+    await _engine!.initialize(
+      const RtcEngineContext(
+        appId: appId,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+      ),
+    );
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
         onError: (ErrorCodeType err, String msg) {
           debugPrint("Customer Agora RTC Error code: $err, message: $msg");
         },
-        onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
-          debugPrint("Customer Agora Connection State: $state, reason: $reason");
-        },
+        onConnectionStateChanged:
+            (
+              RtcConnection connection,
+              ConnectionStateType state,
+              ConnectionChangedReasonType reason,
+            ) {
+              debugPrint(
+                "Customer Agora Connection State: $state, reason: $reason",
+              );
+            },
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("Customer local user ${connection.localUid} joined channel: ${connection.channelId}");
+          debugPrint(
+            "Customer local user ${connection.localUid} joined channel: ${connection.channelId}",
+          );
           _engine?.setEnableSpeakerphone(true);
           _engine?.adjustPlaybackSignalVolume(100);
           _engine?.adjustRecordingSignalVolume(100);
@@ -104,7 +117,9 @@ class _CallScreenState extends State<CallScreen> {
           _engine?.muteAllRemoteAudioStreams(false);
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("Customer remote user $remoteUid joined successfully in channel: ${connection.channelId}");
+          debugPrint(
+            "Customer remote user $remoteUid joined successfully in channel: ${connection.channelId}",
+          );
           _ringTimeoutTimer?.cancel();
           FlutterRingtonePlayer().stop();
           _engine?.setEnableSpeakerphone(true);
@@ -117,51 +132,89 @@ class _CallScreenState extends State<CallScreen> {
               _isCallActive = true;
             });
             if (_customerId != null && _customerId!.isNotEmpty) {
-              _startTimers(_customerId!, connection.channelId ?? _channelName ?? '');
+              _startTimers(
+                _customerId!,
+                connection.channelId ?? _channelName ?? '',
+              );
             }
           }
         },
-        onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
-          debugPrint("Customer Remote Audio state: uid $remoteUid, state $state, reason $reason");
-          if (state == RemoteAudioState.remoteAudioStateDecoding || state == RemoteAudioState.remoteAudioStateStarting) {
-            _engine?.setEnableSpeakerphone(true);
-            _engine?.adjustPlaybackSignalVolume(100);
-            _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
-            if (mounted && _remoteUid == null) {
+        onRemoteAudioStateChanged:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              RemoteAudioState state,
+              RemoteAudioStateReason reason,
+              int elapsed,
+            ) {
+              debugPrint(
+                "Customer Remote Audio state: uid $remoteUid, state $state, reason $reason",
+              );
+              if (state == RemoteAudioState.remoteAudioStateDecoding ||
+                  state == RemoteAudioState.remoteAudioStateStarting) {
+                _engine?.setEnableSpeakerphone(true);
+                _engine?.adjustPlaybackSignalVolume(100);
+                _engine?.muteRemoteAudioStream(uid: remoteUid, mute: false);
+                if (mounted && _remoteUid == null) {
+                  setState(() {
+                    _remoteUid = remoteUid;
+                  });
+                }
+              }
+            },
+        onRemoteVideoStateChanged:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              RemoteVideoState state,
+              RemoteVideoStateReason reason,
+              int elapsed,
+            ) {
+              debugPrint(
+                "Customer Remote Video state: uid $remoteUid, state $state, reason $reason",
+              );
+              if (state == RemoteVideoState.remoteVideoStateDecoding ||
+                  state == RemoteVideoState.remoteVideoStateStarting) {
+                if (mounted && _remoteUid != remoteUid) {
+                  setState(() {
+                    _remoteUid = remoteUid;
+                  });
+                }
+              }
+            },
+        onUserOffline:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              UserOfflineReasonType reason,
+            ) {
+              debugPrint("Customer remote user $remoteUid left channel");
               setState(() {
-                _remoteUid = remoteUid;
+                _remoteUid = null;
               });
-            }
-          }
-        },
-        onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-          debugPrint("Customer Remote Video state: uid $remoteUid, state $state, reason $reason");
-          if (state == RemoteVideoState.remoteVideoStateDecoding || state == RemoteVideoState.remoteVideoStateStarting) {
-            if (mounted && _remoteUid != remoteUid) {
-              setState(() {
-                _remoteUid = remoteUid;
-              });
-            }
-          }
-        },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          debugPrint("Customer remote user $remoteUid left channel");
-          setState(() {
-            _remoteUid = null;
-          });
-          _endCall(reason: 'Expert left the call');
-        },
+              _endCall(reason: 'Expert left the call');
+            },
         onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
-          debugPrint('[onTokenPrivilegeWillExpire] connection: ${connection.toJson()}, token: $token');
+          debugPrint(
+            '[onTokenPrivilegeWillExpire] connection: ${connection.toJson()}, token: $token',
+          );
         },
-        onStreamMessage: (RtcConnection connection, int remoteUid, int streamId, Uint8List data, int length, int sentTs) {
-          final mode = String.fromCharCodes(data);
-          if (mounted) {
-            setState(() {
-              _expertPrivacyMode = mode;
-            });
-          }
-        },
+        onStreamMessage:
+            (
+              RtcConnection connection,
+              int remoteUid,
+              int streamId,
+              Uint8List data,
+              int length,
+              int sentTs,
+            ) {
+              final mode = String.fromCharCodes(data);
+              if (mounted) {
+                setState(() {
+                  _expertPrivacyMode = mode;
+                });
+              }
+            },
       ),
     );
 
@@ -221,21 +274,30 @@ class _CallScreenState extends State<CallScreen> {
     final customerId = user['id'] ?? 'cust_1';
     _customerId = customerId.toString();
     final customerName = user['name'] ?? 'Customer';
-    final balance = double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
+    final balance =
+        double.tryParse(user['walletBalance']?.toString() ?? '0') ?? 0.0;
 
     if (balance < widget.pricePerMinute) {
       setState(() {
         _status = 'Insufficient Balance';
       });
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (dialogCtx) => AlertDialog(
             backgroundColor: AppTheme.cardColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('Insufficient Balance', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Insufficient Balance',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: Text(
               'Your wallet balance (₹${balance.toStringAsFixed(2)}) is lower than the call rate (₹${widget.pricePerMinute.toStringAsFixed(2)}/min). Please recharge to make this call.',
               style: const TextStyle(color: Colors.white70),
@@ -246,7 +308,10 @@ class _CallScreenState extends State<CallScreen> {
                   Navigator.pop(dialogCtx);
                   Navigator.pop(context);
                 },
-                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -254,11 +319,21 @@ class _CallScreenState extends State<CallScreen> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const WalletHomeScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const WalletHomeScreen(),
+                    ),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: const Text('Recharge Now', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                ),
+                child: const Text(
+                  'Recharge Now',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -267,9 +342,10 @@ class _CallScreenState extends State<CallScreen> {
       return;
     }
 
-    final channelName = 'call_${widget.expertId}_${DateTime.now().millisecondsSinceEpoch}';
+    final channelName =
+        'call_${widget.expertId}_${DateTime.now().millisecondsSinceEpoch}';
     _channelName = channelName;
-    
+
     // Fetch Agora token with graceful fallback so calls always connect smoothly
     String agoraToken = '';
     try {
@@ -278,7 +354,9 @@ class _CallScreenState extends State<CallScreen> {
         agoraToken = tokenData['token'];
       }
     } catch (e) {
-      debugPrint('Agora token fetch error (continuing with default fallback): $e');
+      debugPrint(
+        'Agora token fetch error (continuing with default fallback): $e',
+      );
     }
 
     setState(() {
@@ -296,7 +374,8 @@ class _CallScreenState extends State<CallScreen> {
     );
 
     _currentCallId = callResult.callId;
-    if (callResult.agoraChannelName != null && callResult.agoraChannelName!.isNotEmpty) {
+    if (callResult.agoraChannelName != null &&
+        callResult.agoraChannelName!.isNotEmpty) {
       _channelName = callResult.agoraChannelName;
     }
     if (callResult.agoraToken != null && callResult.agoraToken!.isNotEmpty) {
@@ -329,7 +408,8 @@ class _CallScreenState extends State<CallScreen> {
           _status = 'Connected';
           _isCallActive = true;
         });
-        final serverChannel = data['channelName']?.toString() ?? _channelName ?? channelName;
+        final serverChannel =
+            data['channelName']?.toString() ?? _channelName ?? channelName;
         final serverToken = data['agoraToken']?.toString() ?? agoraToken;
         if (serverChannel != _channelName) {
           _channelName = serverChannel;
@@ -357,7 +437,9 @@ class _CallScreenState extends State<CallScreen> {
       if (mounted && _isCallActive) {
         final reasonCode = data['reason']?.toString();
         if (reasonCode == 'INSUFFICIENT_BALANCE') {
-          _endCall(reason: 'Wallet balance exhausted. Please recharge your wallet.');
+          _endCall(
+            reason: 'Wallet balance exhausted. Please recharge your wallet.',
+          );
         } else {
           _endCall(reason: 'Expert Ended Call');
         }
@@ -366,19 +448,28 @@ class _CallScreenState extends State<CallScreen> {
 
     SocketService().onLowBalance = (data) {
       if (mounted) {
-        final msg = data['message']?.toString() ?? 'Low balance warning! Less than 1 minute remaining.';
+        final msg =
+            data['message']?.toString() ??
+            'Low balance warning! Less than 1 minute remaining.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFFD97706),
             duration: const Duration(seconds: 5),
             content: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 22),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     msg,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -423,7 +514,7 @@ class _CallScreenState extends State<CallScreen> {
     FlutterRingtonePlayer().stop();
     _durationTimer?.cancel();
     _billingTimer?.cancel();
-    
+
     _isCallActive = false;
 
     final finalCallId = _currentCallId ?? 'call_${DateTime.now().millisecondsSinceEpoch}';
@@ -443,11 +534,20 @@ class _CallScreenState extends State<CallScreen> {
     });
 
     if (_currentCallId != null) {
-      await CallService().endCall(_currentCallId!, _secondsElapsed, amountCharged);
-      
+      await CallService().endCall(
+        _currentCallId!,
+        _secondsElapsed,
+        amountCharged,
+      );
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final customerId = authProvider.user?['id'] ?? 'cust_1';
-      CallService().processBilling(customerId, widget.expertId, widget.pricePerMinute, _secondsElapsed);
+      CallService().processBilling(
+        customerId,
+        widget.expertId,
+        widget.pricePerMinute,
+        _secondsElapsed,
+      );
     }
 
     try {
@@ -469,7 +569,10 @@ class _CallScreenState extends State<CallScreen> {
                 Expanded(
                   child: Text(
                     'Report submitted. Session disconnected safely.',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -482,9 +585,9 @@ class _CallScreenState extends State<CallScreen> {
     }
 
     if (reason != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Call ended: $reason')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Call ended: $reason')));
     }
 
     if (mounted) {
@@ -526,7 +629,11 @@ class _CallScreenState extends State<CallScreen> {
                             color: Colors.red.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.shield_outlined, color: Colors.redAccent, size: 24),
+                          child: const Icon(
+                            Icons.shield_outlined,
+                            color: Colors.redAccent,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         const Expanded(
@@ -535,12 +642,19 @@ class _CallScreenState extends State<CallScreen> {
                             children: [
                               Text(
                                 'Report & End Call',
-                                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               SizedBox(height: 2),
                               Text(
                                 '100% Confidential • Disconnects call immediately',
-                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -550,7 +664,11 @@ class _CallScreenState extends State<CallScreen> {
                     const SizedBox(height: 16),
                     const Text(
                       'Select violation reason:',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ...reasons.map((r) {
@@ -560,19 +678,30 @@ class _CallScreenState extends State<CallScreen> {
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.red.withValues(alpha: 0.15) : const Color(0xFF1E1E28),
+                            color: isSelected
+                                ? Colors.red.withValues(alpha: 0.15)
+                                : const Color(0xFF1E1E28),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isSelected ? Colors.redAccent : Colors.white10,
+                              color: isSelected
+                                  ? Colors.redAccent
+                                  : Colors.white10,
                             ),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                                color: isSelected ? Colors.redAccent : Colors.white38,
+                                isSelected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: isSelected
+                                    ? Colors.redAccent
+                                    : Colors.white38,
                                 size: 18,
                               ),
                               const SizedBox(width: 10),
@@ -580,9 +709,13 @@ class _CallScreenState extends State<CallScreen> {
                                 child: Text(
                                   r,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.white70,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white70,
                                     fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ),
@@ -596,14 +729,24 @@ class _CallScreenState extends State<CallScreen> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.call_end, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.call_end,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         label: const Text(
                           'Report & Disconnect Now',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE53935),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                           elevation: 0,
                         ),
                         onPressed: () async {
@@ -634,7 +777,8 @@ class _CallScreenState extends State<CallScreen> {
       _apiService.reportCall(
         callId: _currentCallId ?? widget.expertId,
         reason: reason,
-        details: 'Incident reported by $reporterName ($reporterId) during call with ${widget.expertName}',
+        details:
+            'Incident reported by $reporterName ($reporterId) during call with ${widget.expertName}',
         targetType: 'CREATOR',
       );
     } catch (e) {
@@ -653,20 +797,30 @@ class _CallScreenState extends State<CallScreen> {
       barrierDismissible: true,
       builder: (context) {
         final isLight = Theme.of(context).brightness == Brightness.light;
-        final dialogBg = isLight ? AppTheme.lightCardColor : AppTheme.darkCardColor;
+        final dialogBg = isLight
+            ? AppTheme.lightCardColor
+            : AppTheme.darkCardColor;
         final titleColor = isLight ? AppTheme.lightTextPrimary : Colors.white;
-        final subtextColor = isLight ? AppTheme.lightTextSecondary : Colors.grey;
+        final subtextColor = isLight
+            ? AppTheme.lightTextSecondary
+            : Colors.grey;
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: dialogBg,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               title: Center(
                 child: Text(
                   'Rate your Call',
-                  style: TextStyle(color: titleColor, fontWeight: FontWeight.bold, fontSize: 20),
+                  style: TextStyle(
+                    color: titleColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
               ),
               content: Column(
@@ -684,7 +838,9 @@ class _CallScreenState extends State<CallScreen> {
                       final starValue = index + 1;
                       return IconButton(
                         icon: Icon(
-                          starValue <= rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                          starValue <= rating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
                           color: Colors.amber,
                           size: 38,
                         ),
@@ -701,14 +857,16 @@ class _CallScreenState extends State<CallScreen> {
                     rating == 5
                         ? '⭐⭐⭐⭐⭐ Excellent'
                         : rating == 4
-                            ? '⭐⭐⭐⭐ Good'
-                            : rating == 3
-                                ? '⭐⭐⭐ Average'
-                                : rating == 2
-                                    ? '⭐⭐ Needs Improvement'
-                                    : '⭐ Poor',
+                        ? '⭐⭐⭐⭐ Good'
+                        : rating == 3
+                        ? '⭐⭐⭐ Average'
+                        : rating == 2
+                        ? '⭐⭐ Needs Improvement'
+                        : '⭐ Poor',
                     style: TextStyle(
-                      color: isLight ? const Color(0xFFB45309) : AppTheme.primary,
+                      color: isLight
+                          ? const Color(0xFFB45309)
+                          : AppTheme.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -730,7 +888,9 @@ class _CallScreenState extends State<CallScreen> {
                             Navigator.pop(context); // return to HomeScreen
                           },
                           style: TextButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: Text(
                             'Skip',
@@ -751,10 +911,10 @@ class _CallScreenState extends State<CallScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             try {
-                              await _apiService.client.post('/experts/${widget.expertId}/reviews', data: {
-                                'rating': rating,
-                                'reviewText': '',
-                              });
+                              await _apiService.client.post(
+                                '/experts/${widget.expertId}/reviews',
+                                data: {'rating': rating, 'reviewText': ''},
+                              );
                             } catch (e) {
                               print('Submit Rating Error: $e');
                             }
@@ -765,12 +925,18 @@ class _CallScreenState extends State<CallScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             elevation: 0,
                           ),
                           child: const Text(
                             'Submit',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ),
@@ -807,7 +973,11 @@ class _CallScreenState extends State<CallScreen> {
             children: [
               const Text(
                 'Send a Gift to Companion 🎁',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 5),
               const Text(
@@ -822,12 +992,24 @@ class _CallScreenState extends State<CallScreen> {
                   return GestureDetector(
                     onTap: () async {
                       Navigator.pop(context);
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final currentBalance = double.tryParse(authProvider.user?['walletBalance']?.toString() ?? '0') ?? 0.0;
+                      final authProvider = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
+                      final currentBalance =
+                          double.tryParse(
+                            authProvider.user?['walletBalance']?.toString() ??
+                                '0',
+                          ) ??
+                          0.0;
 
                       if (currentBalance < price) {
                         ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text('Insufficient balance for ${g['name']} (₹${price.toStringAsFixed(0)})')),
+                          SnackBar(
+                            content: Text(
+                              'Insufficient balance for ${g['name']} (₹${price.toStringAsFixed(0)})',
+                            ),
+                          ),
                         );
                         return;
                       }
@@ -841,7 +1023,11 @@ class _CallScreenState extends State<CallScreen> {
                       if (ok != null && mounted) {
                         authProvider.refreshProfile();
                         ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text('${g['icon']} You sent a ${g['name']} (₹${price.toStringAsFixed(0)}) to ${widget.expertName}!')),
+                          SnackBar(
+                            content: Text(
+                              '${g['icon']} You sent a ${g['name']} (₹${price.toStringAsFixed(0)}) to ${widget.expertName}!',
+                            ),
+                          ),
                         );
                       }
                     },
@@ -854,11 +1040,28 @@ class _CallScreenState extends State<CallScreen> {
                       ),
                       child: Column(
                         children: [
-                          Text(g['icon'] as String, style: const TextStyle(fontSize: 36)),
+                          Text(
+                            g['icon'] as String,
+                            style: const TextStyle(fontSize: 36),
+                          ),
                           const SizedBox(height: 6),
-                          Text(g['name'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text(
+                            g['name'] as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text('₹${price.toStringAsFixed(0)}', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 11)),
+                          Text(
+                            '₹${price.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -904,7 +1107,10 @@ class _CallScreenState extends State<CallScreen> {
                 decoration: BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.7), width: 1.5),
+                  border: Border.all(
+                    color: AppTheme.primary.withValues(alpha: 0.7),
+                    width: 1.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.6),
@@ -928,23 +1134,35 @@ class _CallScreenState extends State<CallScreen> {
           // Top Report Button (FRND / Connecto style Safety Trigger)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
-            right: (isVideo && _isCallActive && !_isCameraOff && _engine != null) ? 136 : 20,
+            right:
+                (isVideo && _isCallActive && !_isCameraOff && _engine != null)
+                ? 136
+                : 20,
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: _showReportModal,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.45)),
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.45),
+                    ),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.shield_outlined, color: Colors.redAccent, size: 14),
+                      Icon(
+                        Icons.shield_outlined,
+                        color: Colors.redAccent,
+                        size: 14,
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Report',
@@ -965,8 +1183,13 @@ class _CallScreenState extends State<CallScreen> {
           // Low Balance Alert Banner
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
-              final balance = double.tryParse(authProvider.user?['walletBalance']?.toString() ?? '0') ?? 0.0;
-              final isLowBalance = _isCallActive && balance < (widget.pricePerMinute * 2);
+              final balance =
+                  double.tryParse(
+                    authProvider.user?['walletBalance']?.toString() ?? '0',
+                  ) ??
+                  0.0;
+              final isLowBalance =
+                  _isCallActive && balance < (widget.pricePerMinute * 2);
 
               if (!isLowBalance) return const SizedBox.shrink();
 
@@ -975,19 +1198,29 @@ class _CallScreenState extends State<CallScreen> {
                 left: 20,
                 right: 20,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Low Balance (₹${balance.toStringAsFixed(0)} left)',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                       ElevatedButton(
@@ -995,16 +1228,29 @@ class _CallScreenState extends State<CallScreen> {
                           final ok = await authProvider.rechargeWallet(100);
                           if (ok && mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Quick Recharge ₹100 Successful!')),
+                              const SnackBar(
+                                content: Text(
+                                  'Quick Recharge ₹100 Successful!',
+                                ),
+                              ),
                             );
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                         ),
-                        child: const Text('+ ₹100', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        child: const Text(
+                          '+ ₹100',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1093,7 +1339,9 @@ class _CallScreenState extends State<CallScreen> {
               controller: VideoViewController.remote(
                 rtcEngine: _engine!,
                 canvas: VideoCanvas(uid: _remoteUid!),
-                connection: RtcConnection(channelId: _channelName ?? 'call_${widget.expertId}'),
+                connection: RtcConnection(
+                  channelId: _channelName ?? 'call_${widget.expertId}',
+                ),
               ),
             ),
           )
@@ -1111,26 +1359,43 @@ class _CallScreenState extends State<CallScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: const Color(0xFF1A1A22),
-                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.5), width: 2),
+                        border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.5),
+                          width: 2,
+                        ),
                       ),
-                      child: const Icon(Icons.person_rounded, size: 55, color: AppTheme.primary),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 55,
+                        color: AppTheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       widget.expertName,
-                      style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       _isCallActive ? 'Connecting video...' : _status,
-                      style: const TextStyle(color: Colors.white54, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
+                      ),
                     ),
                     if (_isCallActive) ...[
                       const SizedBox(height: 24),
                       const SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.primary,
+                        ),
                       ),
                     ],
                   ],
@@ -1173,7 +1438,14 @@ class _CallScreenState extends State<CallScreen> {
         children: [
           Icon(icon, color: Colors.greenAccent, size: 16),
           const SizedBox(width: 8),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -1189,7 +1461,11 @@ class _CallScreenState extends State<CallScreen> {
               const SizedBox(height: 50),
               Text(
                 widget.expertName,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
@@ -1200,14 +1476,20 @@ class _CallScreenState extends State<CallScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock_rounded, size: 12, color: Colors.greenAccent.shade400.withValues(alpha: 0.85)),
+                  Icon(
+                    Icons.lock_rounded,
+                    size: 12,
+                    color: Colors.greenAccent.shade400.withValues(alpha: 0.85),
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'End-to-End Encrypted',
                     style: TextStyle(
                       fontSize: 11,
                       letterSpacing: 0.3,
-                      color: Colors.greenAccent.shade400.withValues(alpha: 0.85),
+                      color: Colors.greenAccent.shade400.withValues(
+                        alpha: 0.85,
+                      ),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
