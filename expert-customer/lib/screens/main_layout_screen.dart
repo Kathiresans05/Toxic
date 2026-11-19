@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:expert_customer/theme/app_theme.dart';
 import 'package:expert_customer/screens/home_screen.dart';
 import 'package:expert_customer/screens/dashboard_screens.dart'; // For SearchExpertsScreen
 import 'package:expert_customer/screens/activity_screen.dart'; // For Call History & Favorites
@@ -14,6 +13,7 @@ class MainLayoutScreen extends StatefulWidget {
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ActivityScreenState> _activityKey = GlobalKey<ActivityScreenState>();
 
   late final List<Widget> _pages;
 
@@ -23,7 +23,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     _pages = [
       const HomeScreen(),
       const SearchExpertsScreen(), // Call / Explore
-      const ActivityScreen(), // Call History & Favorites
+      ActivityScreen(key: _activityKey), // Call History & Favorites
       const UserProfileScreen(),
     ];
   }
@@ -32,6 +32,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     setState(() {
       _currentIndex = index;
     });
+    if (index == 2) {
+      _activityKey.currentState?.reload();
+    }
   }
 
   @override

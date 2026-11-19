@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:expert_customer/theme/app_theme.dart';
 import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/screens/call_screen.dart';
 import 'package:expert_customer/screens/dashboard_screens.dart';
@@ -9,10 +8,10 @@ class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
 
   @override
-  State<ActivityScreen> createState() => _ActivityScreenState();
+  State<ActivityScreen> createState() => ActivityScreenState();
 }
 
-class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProviderStateMixin {
+class ActivityScreenState extends State<ActivityScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ApiService _apiService = ApiService();
 
@@ -28,6 +27,10 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadAllData();
+  }
+
+  Future<void> reload() async {
+    await _loadAllData();
   }
 
   Future<void> _loadAllData() async {
@@ -247,75 +250,78 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
     }
 
     if (_liveCallHistory.isEmpty) {
-      return Center(
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFFF5DFC9)),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6E431E).withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0C4F3E).withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFF5DFC9)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-                  child: const Icon(Icons.phone_missed_rounded, size: 48, color: Color(0xFF0C4F3E)),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'No Call History Yet',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0B3543),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0C4F3E).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.phone_missed_rounded, size: 48, color: Color(0xFF0C4F3E)),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your completed consultation calls with experts will be recorded here.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark ? Colors.grey : const Color(0xFF64748B),
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(height: 18),
+                  Text(
+                    'No Call History Yet',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0B3543),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.call_rounded, size: 16, color: Colors.white),
-                  label: const Text(
-                    'Browse Online Experts',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your completed consultation calls with experts will be recorded here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey : const Color(0xFF64748B),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0C4F3E),
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.call_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'Browse Online Experts',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0C4F3E),
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -455,71 +461,167 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
       return const Center(child: CircularProgressIndicator(color: Color(0xFF0C4F3E)));
     }
 
-    if (_onlineExperts.isEmpty) {
-      return Center(
+    if (_favoriteIds.isEmpty) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFFF5DFC9)),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6E431E).withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE11D48).withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFF5DFC9)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-                  child: const Icon(Icons.favorite_border_rounded, size: 48, color: Color(0xFFE11D48)),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'No Experts Currently Online',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0B3543),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE11D48).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.favorite_border_rounded, size: 48, color: Color(0xFFE11D48)),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'When registered experts come online, they will appear here.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark ? Colors.grey : const Color(0xFF64748B),
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(height: 18),
+                  Text(
+                    'No Saved Favorites Yet',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0B3543),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap the heart icon on any expert\'s profile to add them to your saved favorites list.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey : const Color(0xFF64748B),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.search_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'Explore Experts',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0C4F3E),
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    List<dynamic> favorites = [];
-    if (_favoriteIds.isNotEmpty) {
-      favorites = _onlineExperts.where((e) {
-        final id = (e['id'] ?? e['user']?['id'] ?? '').toString();
-        return _favoriteIds.contains(id);
-      }).toList();
-    }
+    final favorites = _onlineExperts.where((e) {
+      final id = (e['id'] ?? e['user']?['id'] ?? '').toString();
+      return _favoriteIds.contains(id);
+    }).toList();
+
     if (favorites.isEmpty) {
-      favorites = _onlineExperts;
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFF5DFC9)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6E431E).withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE11D48).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.favorite_rounded, size: 48, color: Color(0xFFE11D48)),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Favorites Currently Offline',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0B3543),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your saved expert consultants will appear here as soon as they come online.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey : const Color(0xFF64748B),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SearchExpertsScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.call_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'Browse Online Experts',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0C4F3E),
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     return ListView.builder(
@@ -533,7 +635,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
         final rating = expert['ratingAverage']?.toString() ?? '5.0';
         final rate = expert['audioRatePerMin']?.toString() ?? '10';
         final isAvailable = expert['available'] == true;
-        final isFav = _favoriteIds.contains(expId) || _favoriteIds.isEmpty;
+        final isFav = _favoriteIds.contains(expId);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),

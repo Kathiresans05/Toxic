@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:expert_customer/constants.dart';
+import 'package:expert_customer/services/call_history_service.dart';
 
 class ApiService {
   final Dio _dio = Dio(BaseOptions(
@@ -41,16 +42,17 @@ class ApiService {
   }
 
   Future<List<dynamic>> getCallHistory() async {
+    List<dynamic> remoteCalls = [];
     try {
       final response = await _dio.get('/calls/history');
       if (response.data is List) {
-        return response.data as List<dynamic>;
+        remoteCalls = response.data as List<dynamic>;
       }
-      return [];
     } catch (e) {
       print('Get Call History Error: $e');
-      return [];
     }
+    final localCalls = await CallHistoryService().getLocalCalls();
+    return CallHistoryService().mergeHistory(remoteCalls, localCalls);
   }
 
   Future<Map<String, dynamic>?> rechargeWallet(double amount) async {

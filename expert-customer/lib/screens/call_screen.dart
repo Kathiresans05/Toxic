@@ -5,6 +5,7 @@ import 'package:expert_customer/theme/app_theme.dart';
 import 'package:expert_customer/providers/auth_provider.dart';
 import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/services/call_service.dart';
+import 'package:expert_customer/services/call_history_service.dart';
 import 'package:expert_customer/services/socket_service.dart';
 import 'package:expert_customer/screens/wallet_screens.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -88,43 +89,8 @@ class _CallScreenState extends State<CallScreen> {
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
-        onError: (ErrorCodeType err, String msg) async {
+        onError: (ErrorCodeType err, String msg) {
           debugPrint("Customer Agora RTC Error code: $err, message: $msg");
-          if (mounted) {
-            setState(() {
-              _agoraStatus = 'Error $err';
-            });
-          }
-          if (!_fallbackTried &&
-              (err == ErrorCodeType.errInvalidToken ||
-               err == ErrorCodeType.errTokenExpired ||
-               err == ErrorCodeType.errInvalidChannelName)) {
-            _fallbackTried = true;
-            debugPrint("Customer retrying Agora joinChannel with empty token...");
-            if (mounted) {
-              setState(() {
-                _agoraStatus = 'Connecting (fallback)...';
-              });
-            }
-            try {
-              await _engine?.leaveChannel();
-              await _engine?.joinChannel(
-                token: '',
-                channelId: _channelName ?? '',
-                uid: 0,
-                options: ChannelMediaOptions(
-                  clientRoleType: ClientRoleType.clientRoleBroadcaster,
-                  publishMicrophoneTrack: true,
-                  publishCameraTrack: widget.callType == 'video',
-                  autoSubscribeAudio: true,
-                  autoSubscribeVideo: widget.callType == 'video',
-                  enableAudioRecordingOrPlayout: true,
-                ),
-              );
-            } catch (e) {
-              debugPrint("Customer retry joinChannel error: $e");
-            }
-          }
         },
         onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
           debugPrint("Customer Agora Connection State: $state, reason: $reason");
@@ -136,11 +102,6 @@ class _CallScreenState extends State<CallScreen> {
           _engine?.adjustRecordingSignalVolume(100);
           _engine?.muteLocalAudioStream(false);
           _engine?.muteAllRemoteAudioStreams(false);
-          if (mounted) {
-            setState(() {
-              _agoraStatus = _remoteUid != null ? 'Voice Connected (Live)' : 'Connected, waiting for expert...';
-            });
-          }
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           debugPrint("Customer remote user $remoteUid joined successfully in channel: ${connection.channelId}");
@@ -154,7 +115,6 @@ class _CallScreenState extends State<CallScreen> {
               _remoteUid = remoteUid;
               _status = 'Connected';
               _isCallActive = true;
-              _agoraStatus = 'Voice Connected (Live)';
             });
             if (_customerId != null && _customerId!.isNotEmpty) {
               _startTimers(_customerId!, connection.channelId ?? _channelName ?? '');
@@ -170,7 +130,6 @@ class _CallScreenState extends State<CallScreen> {
             if (mounted && _remoteUid == null) {
               setState(() {
                 _remoteUid = remoteUid;
-                _agoraStatus = 'Voice Connected (Live)';
               });
             }
           }
@@ -189,7 +148,6 @@ class _CallScreenState extends State<CallScreen> {
           debugPrint("Customer remote user $remoteUid left channel");
           setState(() {
             _remoteUid = null;
-            _agoraStatus = 'Expert disconnected';
           });
           _endCall(reason: 'Expert left the call');
         },
@@ -209,7 +167,7 @@ class _CallScreenState extends State<CallScreen> {
 
     await _engine!.setAudioProfile(
       profile: AudioProfileType.audioProfileSpeechStandard,
-      scenario: AudioScenarioType.audioScenarioDefault,
+      scenario: AudioScenarioType.audioScenarioGameStreaming,
     );
     await _engine!.enableAudio();
     await _engine!.enableLocalAudio(true);
@@ -228,28 +186,19 @@ class _CallScreenState extends State<CallScreen> {
       await _engine!.disableVideo();
     }
 
-    try {
-      await _engine!.joinChannel(
-        token: token,
-        channelId: channelName,
-        uid: 0,
-        options: ChannelMediaOptions(
-          clientRoleType: ClientRoleType.clientRoleBroadcaster,
-          publishMicrophoneTrack: true,
-          publishCameraTrack: widget.callType == 'video',
-          autoSubscribeAudio: true,
-          autoSubscribeVideo: widget.callType == 'video',
-          enableAudioRecordingOrPlayout: true,
-        ),
-      );
-    } catch (e) {
-      debugPrint("Customer joinChannel exception: $e");
-      if (mounted) {
-        setState(() {
-          _agoraStatus = 'Join Error: $e';
-        });
-      }
-    }
+    await _engine!.joinChannel(
+      token: token,
+      channelId: channelName,
+      uid: 0,
+      options: ChannelMediaOptions(
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        publishMicrophoneTrack: true,
+        publishCameraTrack: widget.callType == 'video',
+        autoSubscribeAudio: true,
+        autoSubscribeVideo: widget.callType == 'video',
+        enableAudioRecordingOrPlayout: true,
+      ),
+    );
 
     await _engine!.setEnableSpeakerphone(true);
     await _engine!.adjustRecordingSignalVolume(100);
@@ -477,8 +426,23 @@ class _CallScreenState extends State<CallScreen> {
     
     _isCallActive = false;
 
+    final finalCallId = _currentCallId ?? 'call_${DateTime.now().millisecondsSinceEpoch}';
+    final amountCharged = (_secondsElapsed / 60) * widget.pricePerMinute;
+
+    // Immediately record completed call locally so history is never lost
+    CallHistoryService().saveCall({
+      'callId': finalCallId,
+      'expertId': widget.expertId,
+      'expertName': widget.expertName,
+      'headline': 'Creator & Consultant',
+      'callType': widget.callType.toUpperCase(),
+      'durationSeconds': _secondsElapsed,
+      'totalAmount': amountCharged > 0 ? amountCharged.toStringAsFixed(2) : widget.pricePerMinute.toStringAsFixed(0),
+      'createdAt': DateTime.now().toUtc().toIso8601String(),
+      'status': 'ENDED',
+    });
+
     if (_currentCallId != null) {
-      final amountCharged = (_secondsElapsed / 60) * widget.pricePerMinute;
       await CallService().endCall(_currentCallId!, _secondsElapsed, amountCharged);
       
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -1248,57 +1212,6 @@ class _CallScreenState extends State<CallScreen> {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
-                      ? Colors.green.withValues(alpha: 0.2)
-                      : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
-                          ? Colors.red.withValues(alpha: 0.2) 
-                          : Colors.amber.withValues(alpha: 0.2)),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
-                        ? Colors.greenAccent
-                        : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
-                            ? Colors.redAccent 
-                            : Colors.amberAccent),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
-                          ? Icons.record_voice_over_rounded
-                          : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
-                              ? Icons.error_outline 
-                              : Icons.sync_rounded),
-                      size: 12,
-                      color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
-                          ? Colors.greenAccent
-                          : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
-                              ? Colors.redAccent 
-                              : Colors.amberAccent),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      _agoraStatus,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _agoraStatus.contains('Live') || _agoraStatus.contains('Connected') 
-                            ? Colors.greenAccent
-                            : (_agoraStatus.contains('Error') || _agoraStatus.contains('Err') 
-                                ? Colors.redAccent 
-                                : Colors.amberAccent),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

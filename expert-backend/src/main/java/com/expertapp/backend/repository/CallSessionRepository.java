@@ -18,6 +18,9 @@ public interface CallSessionRepository extends JpaRepository<CallSession, UUID> 
     Optional<CallSession> findByCallId(String callId);
     Page<CallSession> findByCustomerId(UUID customerId, Pageable pageable);
     Page<CallSession> findByExpertId(UUID expertId, Pageable pageable);
+
+    @Query("SELECT c FROM CallSession c WHERE c.customer.id = :userId OR (c.expert IS NOT NULL AND c.expert.user.id = :userId) ORDER BY c.createdAt DESC")
+    Page<CallSession> findByUserId(@org.springframework.data.repository.query.Param("userId") UUID userId, Pageable pageable);
     Page<CallSession> findByStatus(CallStatus status, Pageable pageable);
     List<CallSession> findByStatus(CallStatus status);
     long countByStatus(CallStatus status);

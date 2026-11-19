@@ -316,10 +316,16 @@ public class CallService {
         CallSessionResponse resp = new CallSessionResponse();
         resp.setId(session.getId());
         resp.setCallId(session.getCallId());
-        resp.setCustomerId(session.getCustomer().getId());
-        resp.setCustomerName(session.getCustomer().getFullName());
-        resp.setExpertId(session.getExpert().getId());
-        resp.setExpertName(session.getExpert().getUser().getFullName());
+        if (session.getCustomer() != null) {
+            resp.setCustomerId(session.getCustomer().getId());
+            resp.setCustomerName(session.getCustomer().getFullName());
+        }
+        if (session.getExpert() != null) {
+            resp.setExpertId(session.getExpert().getId());
+            if (session.getExpert().getUser() != null) {
+                resp.setExpertName(session.getExpert().getUser().getFullName());
+            }
+        }
         resp.setCallType(session.getCallType());
         resp.setStatus(session.getStatus());
         resp.setAgoraChannelName(session.getAgoraChannelName());
@@ -373,7 +379,7 @@ public class CallService {
     public List<CallSessionResponse> getCustomerCallHistory(UUID customerId) {
         org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(0, 50, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
-        return callSessionRepository.findByCustomerId(customerId, pageable)
+        return callSessionRepository.findByUserId(customerId, pageable)
                 .getContent()
                 .stream()
                 .map(this::toResponse)

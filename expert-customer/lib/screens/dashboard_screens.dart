@@ -7,6 +7,7 @@ import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/services/socket_service.dart';
 import 'package:expert_customer/screens/call_screen.dart';
 import 'package:expert_customer/screens/wallet_screens.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Explore Experts
 class SearchExpertsScreen extends StatefulWidget {
@@ -1476,6 +1477,66 @@ class ExpertProfileScreen extends StatefulWidget {
 class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
   bool _isFavorite = false;
 
+  String get _expertId {
+    if (widget.expert != null) {
+      final id = widget.expert!['id'] ?? widget.expert!['user']?['id'];
+      if (id != null && id.toString().isNotEmpty) {
+        return id.toString();
+      }
+    }
+    return widget.name;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavoriteStatus();
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final favs = prefs.getStringList('saved_favorite_expert_ids') ?? [];
+      if (mounted) {
+        setState(() {
+          _isFavorite = favs.contains(_expertId);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final favs = (prefs.getStringList('saved_favorite_expert_ids') ?? []).toSet();
+      final id = _expertId;
+      final newStatus = !_isFavorite;
+      if (newStatus) {
+        favs.add(id);
+      } else {
+        favs.remove(id);
+      }
+      await prefs.setStringList('saved_favorite_expert_ids', favs.toList());
+      if (mounted) {
+        setState(() {
+          _isFavorite = newStatus;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newStatus ? 'Added to Saved Favorites' : 'Removed from Saved Favorites',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: newStatus ? const Color(0xFF0C4F3E) : Colors.black87,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
   void _showCallChoiceSheet(BuildContext context, String expertName, String expertId, double audioRate, double videoRate) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final cardBg = isLight ? AppTheme.lightCardColor : AppTheme.darkCardColor;
@@ -1755,7 +1816,7 @@ class _ExpertProfileScreenState extends State<ExpertProfileScreen> {
                                 size: 20,
                               ),
                               padding: EdgeInsets.zero,
-                              onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                              onPressed: _toggleFavorite,
                             ),
                           ),
                         ),
