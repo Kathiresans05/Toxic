@@ -51,10 +51,25 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
 
             if ("REGISTER".equalsIgnoreCase(event)) {
                 String userId = (String) payload.get("userId");
-                if (userId != null) {
+                if (userId != null && !userId.isBlank()) {
                     userSessions.put(userId, session);
                     session.getAttributes().put("userId", userId);
                     log.info("User {} registered with WebSocket session {}", userId, session.getId());
+                }
+                if (payload.containsKey("expertId")) {
+                    String expertId = (String) payload.get("expertId");
+                    if (expertId != null && !expertId.isBlank()) {
+                        userSessions.put(expertId, session);
+                        log.info("Expert alias {} mapped to WebSocket session {}", expertId, session.getId());
+                    }
+                }
+                if (payload.containsKey("aliases") && payload.get("aliases") instanceof java.util.List<?> list) {
+                    for (Object alias : list) {
+                        if (alias != null && !alias.toString().isBlank()) {
+                            userSessions.put(alias.toString(), session);
+                            log.info("Alias {} mapped to WebSocket session {}", alias, session.getId());
+                        }
+                    }
                 }
             } else if ("CALL_INVITE".equalsIgnoreCase(event) || "CALL_ACCEPT".equalsIgnoreCase(event) ||
                        "CALL_REJECT".equalsIgnoreCase(event) || "CALL_END".equalsIgnoreCase(event)) {
@@ -69,14 +84,18 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
     }
 
     public void sendToUser(String userId, Object messageObject) {
+        if (userId == null || userId.isBlank()) return;
         WebSocketSession targetSession = userSessions.get(userId);
         if (targetSession != null && targetSession.isOpen()) {
             try {
                 String json = objectMapper.writeValueAsString(messageObject);
                 targetSession.sendMessage(new TextMessage(json));
+                log.info("Sent WS message to target {}: {}", userId, json);
             } catch (Exception ex) {
                 log.error("Failed to send message to user {}", userId, ex);
             }
+        } else {
+            log.warn("WebSocket session for target {} not found or closed. Active registered users: {}", userId, userSessions.keySet());
         }
     }
 
@@ -98,10 +117,7 @@ public class CallSignalingWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String userId = (String) session.getAttributes().get("userId");
-        if (userId != null) {
-            userSessions.remove(userId);
-            log.info("User {} disconnected from WebSocket", userId);
-        }
+        userSessions.entrySet().removeIf(entry -> entry.getValue() == null || entry.getValue().getId().equals(session.getId()));
+        log.info("WebSocket session {} disconnected", session.getId());
     }
 }

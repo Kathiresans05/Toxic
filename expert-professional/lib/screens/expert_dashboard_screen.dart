@@ -95,47 +95,51 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
   }
 
   void _setupIncomingCallListener() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final expertId = authProvider.user?['id']?.toString();
+    SocketService().onIncomingCall = (data) {
+      if (!mounted) return;
+      final callId = data['callId']?.toString() ?? '';
+      final callerName = data['callerName']?.toString() ?? 'Customer';
+      final channelName = data['channelName']?.toString() ?? 'room_$callId';
+      final pricePerMinute =
+          double.tryParse(data['pricePerMinute']?.toString() ?? '') ?? 3.0;
+      final callType = data['callType']?.toString().toLowerCase() ?? 'video';
+      final agoraToken = data['agoraToken']?.toString();
 
-    if (expertId != null && expertId.isNotEmpty) {
-      SocketService().connect(expertId);
-      SocketService().onIncomingCall = (data) {
-        if (!mounted) return;
-        final callId = data['callId']?.toString() ?? '';
-        final callerName = data['callerName']?.toString() ?? 'Customer';
-        final channelName = data['channelName']?.toString() ?? 'room_$callId';
-        final pricePerMinute =
-            double.tryParse(data['pricePerMinute']?.toString() ?? '') ?? 3.0;
-        final callType = data['callType']?.toString().toLowerCase() ?? 'video';
-        final agoraToken = data['agoraToken']?.toString();
+      debugPrint('Incoming Call received in Creator Dashboard: callId=$callId, caller=$callerName, channel=$channelName');
 
-        // Trigger Android native wake-lock, full-screen intent & heads-up notification
-        ForegroundService().triggerIncomingCall(
-          callerName: callerName,
-          callId: callId,
-          channelName: channelName,
-          price: pricePerMinute,
-          callType: callType,
-        );
+      // Trigger Android native wake-lock, full-screen intent & heads-up notification
+      ForegroundService().triggerIncomingCall(
+        callerName: callerName,
+        callId: callId,
+        channelName: channelName,
+        price: pricePerMinute,
+        callType: callType,
+      );
 
-        // Clear any old notification banners and show full-screen incoming call UI
-        CallNotificationService().hideBanner();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => IncomingCallScreen(
-              callId: callId,
-              callerName: callerName,
-              channelName: channelName,
-              callerId: data['callerId']?.toString(),
-              pricePerMinute: pricePerMinute,
-              callType: callType,
-              agoraToken: agoraToken,
-            ),
+      // Clear any old notification banners and show full-screen incoming call UI
+      CallNotificationService().hideBanner();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => IncomingCallScreen(
+            callId: callId,
+            callerName: callerName,
+            channelName: channelName,
+            callerId: data['callerId']?.toString(),
+            pricePerMinute: pricePerMinute,
+            callType: callType,
+            agoraToken: agoraToken,
           ),
-        );
-      };
+        ),
+      );
+    };
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.user?['userId']?.toString() ?? authProvider.user?['uid']?.toString() ?? '';
+    final expertId = authProvider.user?['expertId']?.toString() ?? authProvider.user?['id']?.toString() ?? '';
+
+    if (userId.isNotEmpty || expertId.isNotEmpty) {
+      SocketService().connect(userId, expertId: expertId);
     }
   }
 
@@ -155,11 +159,14 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
         _isOnline = online;
       });
 
+      _setupIncomingCallListener();
+
       if (online) {
         ForegroundService().startOnlineService();
-        final expertId = authProvider.user?['id']?.toString();
-        if (expertId != null && expertId.isNotEmpty) {
-          SocketService().connect(expertId);
+        final userId = authProvider.user?['userId']?.toString() ?? '';
+        final expertId = authProvider.user?['expertId']?.toString() ?? authProvider.user?['id']?.toString() ?? '';
+        if (userId.isNotEmpty || expertId.isNotEmpty) {
+          SocketService().connect(userId, expertId: expertId);
         }
       }
     }
@@ -170,13 +177,16 @@ class _ExpertDashboardScreenState extends State<ExpertDashboardScreen> {
       _isOnline = value;
     });
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final expertId = authProvider.user?['id']?.toString();
+    final expertId = authProvider.user?['expertId']?.toString() ?? authProvider.user?['id']?.toString();
+    final userId = authProvider.user?['userId']?.toString() ?? expertId;
     final userPhone = authProvider.user?['phone']?.toString();
+
+    _setupIncomingCallListener();
 
     if (value) {
       await ForegroundService().startOnlineService();
-      if (expertId != null && expertId.isNotEmpty) {
-        SocketService().connect(expertId);
+      if (userId != null && userId.isNotEmpty) {
+        SocketService().connect(userId, expertId: expertId);
       }
     } else {
       await ForegroundService().stopOnlineService();
@@ -2352,7 +2362,13 @@ class _AvailabilitySettingsScreenState
     try {
       await ApiService().toggleExpertStatus(val);
       if (mounted) {
-        Provider.of<AuthProvider>(context, listen: false).refreshProfile();
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshProfile();
+        final userId = authProvider.user?['userId']?.toString() ?? '';
+        final expertId = authProvider.user?['expertId']?.toString() ?? authProvider.user?['id']?.toString() ?? '';
+        if (val && (userId.isNotEmpty || expertId.isNotEmpty)) {
+          SocketService().connect(userId, expertId: expertId);
+        }
       }
     } catch (e) {
       debugPrint('Error toggling status: $e');

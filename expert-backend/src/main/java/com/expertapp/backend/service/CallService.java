@@ -90,7 +90,7 @@ public class CallService {
         session.setStatus(CallStatus.REQUESTED);
         CallSession saved = callSessionRepository.save(session);
 
-        // Notify Creator via WebSocket
+        // Notify Creator via WebSocket (send to BOTH User UUID and ExpertProfile UUID for 100% delivery guarantee)
         Map<String, Object> wsAlert = new HashMap<>();
         wsAlert.put("event", "INCOMING_CALL");
         wsAlert.put("callId", callId);
@@ -100,7 +100,13 @@ public class CallService {
         wsAlert.put("callerId", customer.getId().toString());
         wsAlert.put("callType", request.getCallType().name());
         wsAlert.put("pricePerMinute", rate);
-        webSocketHandler.sendToUser(expert.getUser().getId().toString(), wsAlert);
+        
+        String creatorUserUuid = expert.getUser().getId().toString();
+        String creatorProfileUuid = expert.getId().toString();
+        webSocketHandler.sendToUser(creatorUserUuid, wsAlert);
+        if (!creatorUserUuid.equals(creatorProfileUuid)) {
+            webSocketHandler.sendToUser(creatorProfileUuid, wsAlert);
+        }
 
         // Notify Creator via Push Notification
         Map<String, String> data = new HashMap<>();
@@ -155,6 +161,14 @@ public class CallService {
         wsAlert.put("event", "CALL_REJECTED");
         wsAlert.put("callId", callId);
         webSocketHandler.sendToUser(session.getCustomer().getId().toString(), wsAlert);
+        if (session.getExpert() != null) {
+            String creatorUserUuid = session.getExpert().getUser().getId().toString();
+            String creatorProfileUuid = session.getExpert().getId().toString();
+            webSocketHandler.sendToUser(creatorUserUuid, wsAlert);
+            if (!creatorUserUuid.equals(creatorProfileUuid)) {
+                webSocketHandler.sendToUser(creatorProfileUuid, wsAlert);
+            }
+        }
     }
 
     @Transactional
@@ -225,7 +239,14 @@ public class CallService {
             wsAlert.put("reason", reason);
         }
         webSocketHandler.sendToUser(session.getCustomer().getId().toString(), wsAlert);
-        webSocketHandler.sendToUser(session.getExpert().getUser().getId().toString(), wsAlert);
+        if (session.getExpert() != null) {
+            String creatorUserUuid = session.getExpert().getUser().getId().toString();
+            String creatorProfileUuid = session.getExpert().getId().toString();
+            webSocketHandler.sendToUser(creatorUserUuid, wsAlert);
+            if (!creatorUserUuid.equals(creatorProfileUuid)) {
+                webSocketHandler.sendToUser(creatorProfileUuid, wsAlert);
+            }
+        }
 
         return toResponse(saved);
     }

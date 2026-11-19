@@ -42,10 +42,13 @@ class AuthProvider extends ChangeNotifier {
       try {
         final profile = await _apiService.getExpertProfile();
         if (profile != null) {
-          final userId = profile['id']?.toString() ?? (profile['user'] is Map ? profile['user']['id']?.toString() : null) ?? _token!;
+          final expertProfileId = profile['id']?.toString() ?? '';
+          final actualUserId = (profile['user'] is Map ? profile['user']['id']?.toString() : null) ?? _token!;
           _user = {
-            'id': userId,
-            'uid': userId,
+            'id': expertProfileId.isNotEmpty ? expertProfileId : actualUserId,
+            'expertId': expertProfileId,
+            'userId': actualUserId,
+            'uid': actualUserId,
             'name': (profile['user'] is Map ? profile['user']['fullName'] : null) ?? 'Creator',
             'headline': profile['headline'] ?? 'Consultant',
             'audioRate': profile['audioRatePerMin'] ?? 10.0,
@@ -53,7 +56,7 @@ class AuthProvider extends ChangeNotifier {
             'isApproved': profile['approved'] ?? false,
             'isOnline': profile['available'] == true,
           };
-          _socketService.connect(userId);
+          _socketService.connect(actualUserId, expertId: expertProfileId);
         } else {
           await logout();
         }
@@ -82,9 +85,11 @@ class AuthProvider extends ChangeNotifier {
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         _token = data['accessToken']?.toString();
+        final actualUserId = data['userId']?.toString() ?? '';
         _user = {
-          'id': data['userId']?.toString() ?? '',
-          'uid': data['userId']?.toString() ?? '',
+          'id': actualUserId,
+          'uid': actualUserId,
+          'userId': actualUserId,
           'name': data['fullName'] ?? 'Creator',
           'email': data['email'] ?? '',
           'role': data['role'] ?? 'ROLE_CREATOR',
@@ -94,12 +99,14 @@ class AuthProvider extends ChangeNotifier {
         
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', _token!);
-        await prefs.setString('user_id', _user!['id']);
+        await prefs.setString('user_id', actualUserId);
         
-        _socketService.connect(_user!['id']);
+        _socketService.connect(actualUserId);
         
         _isLoading = false;
         notifyListeners();
+        // Load full expert profile to obtain and register expertProfileId alias
+        unawaited(refreshProfile());
         return true;
       }
     } catch (e) {
@@ -183,9 +190,13 @@ class AuthProvider extends ChangeNotifier {
       if (_token != null) {
         final profile = await _apiService.getExpertProfile();
         if (profile != null) {
-          final userId = profile['id']?.toString() ?? (profile['user'] is Map ? profile['user']['id']?.toString() : null) ?? _token!;
+          final expertProfileId = profile['id']?.toString() ?? '';
+          final actualUserId = (profile['user'] is Map ? profile['user']['id']?.toString() : null) ?? (_user?['userId']?.toString() ?? _token!);
           _user = {
-            'id': userId,
+            'id': expertProfileId.isNotEmpty ? expertProfileId : actualUserId,
+            'expertId': expertProfileId,
+            'userId': actualUserId,
+            'uid': actualUserId,
             'name': profile['user'] is Map ? profile['user']['fullName'] : (profile['name'] ?? 'Creator'),
             'email': profile['user'] is Map ? profile['user']['email'] : (profile['email'] ?? ''),
             'phone': profile['user'] is Map ? profile['user']['phoneNumber'] : (profile['phoneNumber'] ?? ''),
@@ -195,6 +206,7 @@ class AuthProvider extends ChangeNotifier {
             'isApproved': profile['approved'] ?? false,
             'isOnline': profile['available'] == true,
           };
+          _socketService.connect(actualUserId, expertId: expertProfileId);
           notifyListeners();
         }
       }

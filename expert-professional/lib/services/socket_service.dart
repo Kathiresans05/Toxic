@@ -9,6 +9,7 @@ class SocketService {
   Timer? _reconnectTimer;
   Timer? _pingTimer;
   String? _currentUserId;
+  String? _currentExpertId;
 
   Function(Map<String, dynamic>)? onCallAccepted;
   Function(Map<String, dynamic>)? onCallRejected;
@@ -22,24 +23,50 @@ class SocketService {
 
   bool get isConnected => _socket != null && _socket!.readyState == WebSocket.open;
 
-  void connect(String userId) async {
-    if (kIsWeb || userId.isEmpty) return;
-    _currentUserId = userId;
+  void connect(String userId, {String? expertId}) async {
+    if (kIsWeb || (userId.isEmpty && (expertId == null || expertId.isEmpty))) return;
+    if (userId.isNotEmpty) _currentUserId = userId;
+    if (expertId != null && expertId.isNotEmpty) _currentExpertId = expertId;
 
-    if (isConnected) return;
+    final activeId = (_currentUserId != null && _currentUserId!.isNotEmpty)
+        ? _currentUserId!
+        : (_currentExpertId ?? userId);
+
+    if (isConnected) {
+      final payload = <String, dynamic>{
+        'userId': activeId,
+      };
+      if (_currentExpertId != null && _currentExpertId!.isNotEmpty) {
+        payload['expertId'] = _currentExpertId;
+      }
+      if (_currentUserId != null && _currentExpertId != null && _currentUserId != _currentExpertId) {
+        payload['aliases'] = [_currentUserId, _currentExpertId];
+      }
+      sendEvent('REGISTER', payload);
+      return;
+    }
 
     try {
       final base = AppConstants.baseUrl
           .replaceFirst('http://', 'ws://')
           .replaceFirst('https://', 'wss://')
           .replaceFirst('/api/v1', '');
-      final wsUrl = '$base/ws/calls?userId=$userId';
+      final wsUrl = '$base/ws/calls?userId=$activeId';
 
       debugPrint('Professional connecting to Native WebSocket: $wsUrl');
       _socket = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 5));
 
-      // Register message
-      sendEvent('REGISTER', {'userId': userId});
+      // Register message with both IDs
+      final regPayload = <String, dynamic>{
+        'userId': activeId,
+      };
+      if (_currentExpertId != null && _currentExpertId!.isNotEmpty) {
+        regPayload['expertId'] = _currentExpertId;
+      }
+      if (_currentUserId != null && _currentExpertId != null && _currentUserId != _currentExpertId) {
+        regPayload['aliases'] = [_currentUserId, _currentExpertId];
+      }
+      sendEvent('REGISTER', regPayload);
 
       _socket!.listen(
         (data) {
@@ -113,10 +140,11 @@ class SocketService {
     _socket = null;
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
-    if (!kIsWeb && _currentUserId != null && _currentUserId!.isNotEmpty) {
+    final id = _currentUserId ?? _currentExpertId;
+    if (!kIsWeb && id != null && id.isNotEmpty) {
       _reconnectTimer = Timer(const Duration(seconds: 5), () {
-        if (!isConnected && _currentUserId != null) {
-          connect(_currentUserId!);
+        if (!isConnected) {
+          connect(id, expertId: _currentExpertId);
         }
       });
     }
@@ -124,6 +152,7 @@ class SocketService {
 
   void disconnect() {
     _currentUserId = null;
+    _currentExpertId = null;
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
     _socket?.close();
