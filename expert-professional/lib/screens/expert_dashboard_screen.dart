@@ -2347,6 +2347,18 @@ class _AvailabilitySettingsScreenState
     );
   }
 
+  Future<void> _toggleOnline(bool val) async {
+    setState(() => _isOnline = val);
+    try {
+      await ApiService().toggleExpertStatus(val);
+      if (mounted) {
+        Provider.of<AuthProvider>(context, listen: false).refreshProfile();
+      }
+    } catch (e) {
+      debugPrint('Error toggling status: $e');
+    }
+  }
+
   Future<void> _saveAvailability() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
