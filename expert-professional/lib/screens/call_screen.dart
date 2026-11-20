@@ -10,6 +10,7 @@ import 'package:expert_professional/services/call_service.dart';
 import 'package:expert_professional/services/notification_service.dart';
 import 'package:expert_professional/services/ringtone_service.dart';
 import 'package:expert_professional/services/foreground_service.dart';
+import 'package:expert_professional/services/agora_token_service.dart';
 
 const String appId = "c9afe369772c48659610c8b6368df693";
 
@@ -115,34 +116,36 @@ class _CallScreenState extends State<CallScreen> {
                 _agoraStatus = 'Error $err';
               });
             }
-            if (!_fallbackTried &&
-                (err == ErrorCodeType.errInvalidToken ||
-                 err == ErrorCodeType.errTokenExpired ||
-                 err == ErrorCodeType.errInvalidChannelName)) {
-              _fallbackTried = true;
-              debugPrint("Expert retrying Agora joinChannel with empty token...");
-              if (mounted) {
-                setState(() {
-                  _agoraStatus = 'Connecting (fallback)...';
-                });
-              }
+            if (err == ErrorCodeType.errInvalidToken ||
+                err == ErrorCodeType.errTokenExpired) {
+              debugPrint("Expert renewing Agora token with fresh token...");
+              final freshToken = AgoraTokenService.buildToken(channelName: widget.channelName, uid: 0);
               try {
-                await _engine?.leaveChannel();
-                await _engine?.joinChannel(
-                  token: '',
-                  channelId: widget.channelName,
-                  uid: 0,
-                  options: ChannelMediaOptions(
-                    clientRoleType: ClientRoleType.clientRoleBroadcaster,
-                    publishMicrophoneTrack: true,
-                    publishCameraTrack: widget.callType == 'video',
-                    autoSubscribeAudio: true,
-                    autoSubscribeVideo: widget.callType == 'video',
-                    enableAudioRecordingOrPlayout: true,
-                  ),
-                );
-              } catch (e) {
-                debugPrint("Expert fallback joinChannel error: $e");
+                await _engine?.renewToken(freshToken);
+                if (mounted) {
+                  setState(() {
+                    _agoraStatus = 'Voice Connected (Live)';
+                  });
+                }
+              } catch (_) {
+                try {
+                  await _engine?.leaveChannel();
+                  await _engine?.joinChannel(
+                    token: freshToken,
+                    channelId: widget.channelName,
+                    uid: 0,
+                    options: ChannelMediaOptions(
+                      clientRoleType: ClientRoleType.clientRoleBroadcaster,
+                      publishMicrophoneTrack: true,
+                      publishCameraTrack: widget.callType == 'video',
+                      autoSubscribeAudio: true,
+                      autoSubscribeVideo: widget.callType == 'video',
+                      enableAudioRecordingOrPlayout: true,
+                    ),
+                  );
+                } catch (e) {
+                  debugPrint("Expert joinChannel retry error: $e");
+                }
               }
             }
           },
@@ -243,6 +246,9 @@ class _CallScreenState extends State<CallScreen> {
     if (token.isEmpty) {
       final tokenData = await ApiService().getAgoraToken(widget.channelName, '0');
       token = tokenData?['token'] ?? '';
+    }
+    if (token.isEmpty) {
+      token = AgoraTokenService.buildToken(channelName: widget.channelName, uid: 0);
     }
     debugPrint('Expert joining Agora channel: ${widget.channelName} with token length: ${token.length}');
 

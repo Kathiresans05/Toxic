@@ -104,7 +104,7 @@ public class AgoraService {
 
             ByteBuf mBuf = new ByteBuf();
             mBuf.putUint32(salt);
-            mBuf.putUint32(now);
+            mBuf.putUint32(expireTs);
             mBuf.putTreeMapUInt32(messages);
             byte[] m = mBuf.pack();
 

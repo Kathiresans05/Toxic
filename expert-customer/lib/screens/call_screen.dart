@@ -6,6 +6,7 @@ import 'package:expert_customer/providers/auth_provider.dart';
 import 'package:expert_customer/services/api_service.dart';
 import 'package:expert_customer/services/call_service.dart';
 import 'package:expert_customer/services/call_history_service.dart';
+import 'package:expert_customer/services/agora_token_service.dart';
 import 'package:expert_customer/services/socket_service.dart';
 import 'package:expert_customer/screens/wallet_screens.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -73,6 +74,9 @@ class _CallScreenState extends State<CallScreen> {
         debugPrint('Customer fetching Agora token fallback error: $e');
       }
     }
+    if (token.isEmpty) {
+      token = AgoraTokenService.buildToken(channelName: channelName, uid: 0);
+    }
     debugPrint(
       'Customer joining Agora channel: $channelName with token length: ${token.length}',
     );
@@ -93,8 +97,12 @@ class _CallScreenState extends State<CallScreen> {
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
-        onError: (ErrorCodeType err, String msg) {
+        onError: (ErrorCodeType err, String msg) async {
           debugPrint("Customer Agora RTC Error code: $err, message: $msg");
+          if (err == ErrorCodeType.errInvalidToken || err == ErrorCodeType.errTokenExpired) {
+            final freshToken = AgoraTokenService.buildToken(channelName: channelName, uid: 0);
+            await _engine?.renewToken(freshToken);
+          }
         },
         onConnectionStateChanged:
             (
